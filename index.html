@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StreamStation Pro • Ultra Secure</title>
+    <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+    <style>
+        /* Same compact styles as before */
+        :root {
+            --bg: #080c14; --surface: #0f1420; --surface2: #181e2c;
+            --border: #1a2233; --text: #e0e4ec; --text2: #8892a5;
+            --accent: #38bdf8; --radius: 6px; --shadow: 0 2px 6px rgba(0,0,0,0.3);
+        }
+        * { margin:0; padding:0; box-sizing:border-box; }
+        body { background:var(--bg); color:var(--text); font-family:'Segoe UI',system-ui,sans-serif; min-height:100vh; display:flex; justify-content:center; padding:4px; font-size:10px; }
+        .app { max-width:1100px; width:100%; display:flex; flex-direction:column; gap:4px; }
+        .login-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.85); z-index:1000; display:flex; align-items:center; justify-content:center; }
+        .login-box { background:var(--surface); border-radius:12px; padding:20px; width:280px; text-align:center; }
+        .login-box h2 { margin-bottom:12px; font-size:14px; }
+        .login-box input { width:100%; padding:8px; border-radius:6px; border:1.5px solid var(--border); background:#0f172a; color:#fff; margin-bottom:8px; font-size:11px; outline:none; }
+        .login-box button { width:100%; padding:8px; border-radius:6px; border:none; background:var(--accent); color:#000; font-weight:700; cursor:pointer; font-size:11px; }
+        .guest-link { margin-top:10px; font-size:9px; color:var(--text2); cursor:pointer; text-decoration:underline; }
+        .header { display:flex; align-items:center; gap:6px; padding:2px 0; flex-wrap:wrap; }
+        .logo { display:flex; align-items:center; gap:4px; }
+        .logo .icon { width:26px; height:26px; border-radius:6px; background:linear-gradient(135deg,#38bdf8,#818cf8); display:flex; align-items:center; justify-content:center; font-size:14px; }
+        .logo h1 { font-size:0.9rem; font-weight:800; background:linear-gradient(135deg,#f1f5f9,#38bdf8); -webkit-background-clip:text; -webkit-text-fill-color:transparent; }
+        .search-wrap { flex:1 1 130px; position:relative; }
+        .search-wrap input { width:100%; padding:4px 8px 4px 24px; border-radius:12px; border:1.5px solid var(--border); background:var(--surface); color:var(--text); font-size:10px; outline:none; }
+        .search-wrap .search-icon { position:absolute; left:7px; top:50%; transform:translateY(-50%); color:#64748b; font-size:11px; pointer-events:none; }
+        .now-playing { background:var(--surface2); padding:3px 8px; border-radius:10px; font-size:9px; white-space:nowrap; display:flex; align-items:center; gap:4px; flex-shrink:0; }
+        .now-playing .live-dot { width:5px; height:5px; border-radius:50%; background:#22c55e; animation:pulse 1.5s infinite; }
+        @keyframes pulse { 0%,100%{ box-shadow:0 0 0 0 rgba(34,197,94,0.6); } 50%{ box-shadow:0 0 0 5px rgba(34,197,94,0); } }
+        .btn { padding:3px 7px; border-radius:5px; border:1px solid var(--border); background:var(--surface); color:var(--text2); font-size:9px; cursor:pointer; display:flex; align-items:center; gap:2px; font-weight:600; }
+        .btn:hover { background:var(--surface2); color:var(--text); border-color:var(--accent); }
+        .btn.primary { background:var(--accent); color:#000; border:none; }
+        .player-wrapper { background:#0a101f; border-radius:8px; overflow:hidden; border:1px solid var(--border); }
+        #playerContainer { width:100%; aspect-ratio:16/9; background:#020617; position:relative; display:flex; align-items:center; justify-content:center; }
+        #playerContainer iframe, #playerContainer video { width:100%; height:100%; border:0; position:absolute; top:0; left:0; }
+        .fallback-text { color:#475569; text-align:center; padding:20px; font-size:11px; }
+        .tabs { display:flex; gap:2px; flex-wrap:wrap; }
+        .tab { padding:3px 8px; border-radius:10px; border:1.5px solid transparent; background:var(--surface); color:var(--text2); font-size:9px; font-weight:600; cursor:pointer; display:flex; align-items:center; gap:2px; }
+        .tab.active { background:#1a2d44; color:#fff; border-color:var(--accent); }
+        .tab .count { background:#1e293b; padding:1px 4px; border-radius:4px; font-size:7px; }
+        .channel-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(120px,1fr)); gap:5px; }
+        @media (min-width:600px) { .channel-grid { grid-template-columns:repeat(auto-fill, minmax(130px,1fr)); } }
+        .channel-card { background:var(--surface); border-radius:var(--radius); overflow:hidden; cursor:pointer; border:2px solid transparent; position:relative; box-shadow:var(--shadow); }
+        .channel-card:hover { border-color:#3b4f6b; }
+        .channel-card.active { border-color:var(--accent); }
+        .card-thumb { width:100%; aspect-ratio:16/9; background:#1a2335; position:relative; }
+        .card-thumb img { width:100%; height:100%; object-fit:cover; }
+        .card-thumb .placeholder { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-size:20px; }
+        .card-info { padding:3px 5px; }
+        .card-name { font-size:9px; font-weight:600; line-height:1.2; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+        .card-badge { font-size:7px; padding:1px 3px; border-radius:3px; margin-top:1px; display:inline-block; font-weight:700; text-transform:uppercase; }
+        .actions { position:absolute; top:2px; right:2px; display:flex; gap:2px; opacity:0; transition:opacity 0.2s; z-index:5; }
+        .channel-card:hover .actions { opacity:1; }
+        .action-btn { width:18px; height:18px; border-radius:50%; background:rgba(0,0,0,0.7); color:#fff; border:none; font-size:8px; cursor:pointer; display:flex; align-items:center; justify-content:center; }
+        .add-section { background:var(--surface); border-radius:8px; padding:5px 8px; border:1px dashed #1e3a50; display:flex; gap:4px; align-items:center; flex-wrap:wrap; }
+        .add-section.hidden { display:none; }
+        .add-section input, .add-section select { padding:3px 6px; border-radius:4px; border:1.5px solid var(--border); background:#0f172a; color:#fff; font-size:9px; flex:1 1 80px; }
+        .modal { position:fixed; inset:0; background:rgba(0,0,0,0.6); display:flex; align-items:center; justify-content:center; z-index:99; opacity:0; pointer-events:none; }
+        .modal.open { opacity:1; pointer-events:auto; }
+        .modal-content { background:var(--surface); border-radius:10px; padding:12px; width:90%; max-width:350px; }
+        .toast { position:fixed; bottom:12px; right:12px; background:#1a2332; color:#e2e8f0; padding:6px 12px; border-radius:6px; font-size:9px; z-index:999; opacity:0; transform:translateY(10px); transition:all 0.3s; }
+        .toast.show { opacity:1; transform:translateY(0); }
+    </style>
+</head>
+<body>
+    <div class="app">
+        <div class="login-overlay" id="loginOverlay">
+            <div class="login-box">
+                <h2>🔐 Admin Login</h2>
+                <input type="password" id="adminPassword" placeholder="Enter password" />
+                <button id="loginBtn">Unlock</button>
+                <div class="guest-link" id="guestLink">Continue as Guest (view only)</div>
+            </div>
+        </div>
+
+        <div class="header">
+            <div class="logo"><div class="icon">📡</div><h1>StreamStation Pro</h1></div>
+            <div class="search-wrap"><span class="search-icon">🔍</span><input type="text" id="searchInput" placeholder="Search..." /></div>
+            <div class="now-playing"><span class="live-dot"></span> <strong id="currentChannelLabel">-</strong></div>
+            <div class="header-right">
+                <button class="btn" id="shuffleBtn">🎲</button>
+                <button class="btn" id="exportBtn">💾</button>
+                <button class="btn" id="importBtn">📂</button>
+                <button class="btn" id="compactToggle">📐</button>
+                <button class="btn" id="themeToggle">🌓</button>
+                <button class="btn" id="logoutBtn" style="display:none;">🚪</button>
+            </div>
+        </div>
+
+        <div class="player-wrapper">
+            <div id="playerContainer"><div class="fallback-text" id="fallbackText">Select a channel</div></div>
+            <div class="player-controls">
+                <button class="refresh-btn active" id="refreshBtn">🔄 Reload</button>
+                <button class="pip-btn" id="pipButton">📌 PiP</button>
+                <button class="fullscreen-btn" id="fullscreenBtn">🖥️ Full</button>
+            </div>
+        </div>
+
+        <div class="tabs" id="tabsContainer">
+            <button class="tab active" data-cat="all">🌐 All <span class="count" id="countAll">0</span></button>
+            <button class="tab" data-cat="youtube">▶️ YT <span class="count" id="countYt">0</span></button>
+            <button class="tab" data-cat="facebook">📱 FB <span class="count" id="countFb">0</span></button>
+            <button class="tab" data-cat="web">🌊 Web <span class="count" id="countWeb">0</span></button>
+            <button class="tab" data-cat="tv">📺 TV <span class="count" id="countTv">0</span></button>
+        </div>
+
+        <div class="channel-grid" id="channelGrid"></div>
+
+        <div class="add-section" id="addSection">
+            <input type="text" id="channelNameInput" placeholder="Title" />
+            <input type="text" id="channelUrlInput" placeholder="Paste URL" />
+            <select id="channelCategorySelect">
+                <option value="auto">🤖 Auto</option>
+                <option value="youtube">▶️ YT</option>
+                <option value="facebook">📱 FB</option>
+                <option value="web">🌊 Web</option>
+                <option value="tv">📺 TV</option>
+            </select>
+            <button class="btn primary" id="addChannelBtn">➕ Add</button>
+        </div>
+    </div>
+
+    <div class="modal" id="editModal">
+        <div class="modal-content">
+            <h3>✏️ Edit Channel</h3>
+            <input type="text" id="editName" placeholder="Name" />
+            <input type="text" id="editUrl" placeholder="URL" />
+            <select id="editCategory">
+                <option value="youtube">YouTube</option>
+                <option value="facebook">Facebook</option>
+                <option value="web">Web</option>
+                <option value="tv">TV</option>
+            </select>
+            <div class="modal-actions">
+                <button class="btn" id="cancelEdit">Cancel</button>
+                <button class="btn primary" id="saveEdit">Save</button>
+            </div>
+        </div>
+    </div>
+
+    <input type="file" id="importFileInput" accept=".json" style="display:none">
+    <div class="toast" id="toast"></div>
+
+    <script>
+        (() => {
+            // ⚠️ CHANGE THIS TO YOUR NETLIFY FUNCTION URL AFTER DEPLOY
+            const API_BASE = 'https://YOUR_SITE.netlify.app/.netlify/functions/api';
+
+            let channels = [], activeIndex = -1, activeCategory = 'all', searchQuery = '';
+            let hlsInstance = null, currentPlayerElement = null, adminToken = null, isAdmin = false;
+            let editChannelId = null;
+
+            const grid = document.getElementById('channelGrid'), container = document.getElementById('playerContainer'),
+                fallbackText = document.getElementById('fallbackText'), currentLabel = document.getElementById('currentChannelLabel'),
+                toastEl = document.getElementById('toast'), pipBtn = document.getElementById('pipButton'),
+                fullscreenBtn = document.getElementById('fullscreenBtn'), refreshBtn = document.getElementById('refreshBtn'),
+                searchInput = document.getElementById('searchInput'), editModal = document.getElementById('editModal'),
+                addSection = document.getElementById('addSection'), logoutBtn = document.getElementById('logoutBtn'),
+                loginOverlay = document.getElementById('loginOverlay');
+
+            let toastTimer;
+            function showToast(msg, error=false) {
+                clearTimeout(toastTimer); toastEl.textContent = msg; toastEl.style.color = error ? '#fca5a5' : '#e2e8f0';
+                toastEl.classList.add('show'); toastTimer = setTimeout(() => toastEl.classList.remove('show'), 2000);
+            }
+
+            function detectCategory(url) {
+                const u = url.trim();
+                if (/\.m3u8(\?.*)?$/i.test(u) || /\/hls\//i.test(u)) return 'web';
+                if (/facebook\.com|fb\.watch|fb\.com/i.test(u)) return 'facebook';
+                if (/youtube\.com|youtu\.be|youtube-nocookie\.com/i.test(u)) return 'youtube';
+                return 'web';
+            }
+            function buildFacebookEmbed(url) { return url.includes('facebook.com/plugins/video.php') ? url : `https://www.facebook.com/plugins/video.php?href=${encodeURIComponent(url)}&show_text=0&autoplay=1&mute=1`; }
+            function getYoutubeEmbed(url) {
+                const m = url.match(/(?:youtube(?:-nocookie)?\.com\/(?:[^\/\n\s]+\/\S+\/|(?:v|e(?:mbed)?)\/|\S*?[?&]v=)|youtu\.be\/)([a-zA-Z0-9_-]{11})/i);
+                return m ? `https://www.youtube-nocookie.com/embed/${m[1]}?autoplay=1&mute=1&controls=1&playsinline=1&rel=0` : url;
+            }
+            function getYoutubeThumbnail(url) {
+                const m = url.match(/(?:youtube(?:-nocookie)?\.com\/(?:[^\/\n\s]+\/\S+\/|(?:v|e(?:mbed)?)\/|\S*?[?&]v=)|youtu\.be\/)([a-zA-Z0-9_-]{11})/i);
+                return m ? `https://img.youtube.com/vi/${m[1]}/hqdefault.jpg` : null;
+            }
+
+            async function apiFetch(path, method='GET', body=null, needAuth=false) {
+                const headers = { 'Content-Type': 'application/json' };
+                if (needAuth && adminToken) headers['Authorization'] = `Bearer ${adminToken}`;
+                const res = await fetch(`${API_BASE}/${path}`, { method, headers, body: body ? JSON.stringify(body) : undefined });
+                if (!res.ok) {
+                    const err = await res.json().catch(() => ({ error: 'Network error' }));
+                    throw new Error(err.error || 'Request failed');
+                }
+                return res.json();
+            }
+
+            async function loadChannels() {
+                try {
+                    channels = await apiFetch('channels');
+                    channels = channels.map(c => ({ ...c, firebaseKey: c.id, thumbnail: c.thumbnail || getYoutubeThumbnail(c.url), emoji: c.emoji || '📡' }));
+                    if (activeIndex >= channels.length) activeIndex = channels.length > 0 ? 0 : -1;
+                    renderGrid();
+                    if (activeIndex >= 0) playChannel(activeIndex);
+                } catch (e) { showToast('Failed to load channels: ' + e.message, true); }
+            }
+
+            async function addChannelToServer(data) { return await apiFetch('channels', 'POST', data, true); }
+            async function deleteChannelFromServer(id) { await apiFetch(`channels/${id}`, 'DELETE', null, true); }
+            async function updateChannelOnServer(id, data) { await apiFetch(`channels/${id}`, 'PUT', data, true); }
+
+            function destroyPlayer() {
+                if (hlsInstance) { hlsInstance.destroy(); hlsInstance = null; }
+                if (currentPlayerElement) { currentPlayerElement.remove(); currentPlayerElement = null; }
+                pipBtn.classList.remove('active'); fullscreenBtn.classList.remove('active'); refreshBtn.classList.remove('active');
+            }
+            function playChannel(index) {
+                destroyPlayer(); fallbackText.style.display = 'none';
+                if (index < 0 || index >= channels.length) { fallbackText.style.display = ''; currentLabel.textContent = '-'; return; }
+                const ch = channels[index]; activeIndex = index; currentLabel.textContent = ch.name; refreshBtn.classList.add('active');
+                const url = ch.url.trim(), cat = ch.category;
+                if (cat === 'youtube') {
+                    const embed = getYoutubeEmbed(url); const iframe = document.createElement('iframe');
+                    iframe.src = embed; iframe.allow = 'autoplay; clipboard-write; encrypted-media; picture-in-picture; web-share; fullscreen';
+                    iframe.allowFullscreen = true; iframe.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;border:0;';
+                    container.appendChild(iframe); currentPlayerElement = iframe;
+                } else if (cat === 'facebook') {
+                    const embed = buildFacebookEmbed(url); const iframe = document.createElement('iframe');
+                    iframe.src = embed; iframe.allow = 'autoplay; clipboard-write; encrypted-media; picture-in-picture; web-share; fullscreen';
+                    iframe.allowFullscreen = true; iframe.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;border:0;';
+                    container.appendChild(iframe); currentPlayerElement = iframe;
+                } else {
+                    const iframe = document.createElement('iframe'); iframe.src = url;
+                    iframe.sandbox = 'allow-scripts allow-same-origin allow-popups allow-forms'; iframe.allow = 'fullscreen';
+                    iframe.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;border:0;';
+                    container.appendChild(iframe); currentPlayerElement = iframe;
+                }
+            }
+            function reloadStream() { if (activeIndex >= 0) playChannel(activeIndex); }
+
+            function getFilteredSorted() {
+                let list = [...channels];
+                if (activeCategory !== 'all') list = list.filter(c => c.category === activeCategory);
+                if (searchQuery) { const q = searchQuery.toLowerCase(); list = list.filter(c => c.name.toLowerCase().includes(q) || c.url.toLowerCase().includes(q)); }
+                return list;
+            }
+            function renderGrid() {
+                const filtered = getFilteredSorted(); grid.innerHTML = '';
+                if (!filtered.length) { grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:15px;color:#64748b;">📭 No channels</div>'; return; }
+                filtered.forEach(ch => {
+                    const idx = channels.indexOf(ch); const card = document.createElement('div');
+                    card.className = 'channel-card'; if (idx === activeIndex) card.classList.add('active');
+                    const thumb = ch.thumbnail; const thumbHTML = thumb ? `<img src="${thumb}" alt="" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';" /><div class="placeholder" style="display:none;">${ch.emoji || '📡'}</div>` : `<div class="placeholder">${ch.emoji || '📡'}</div>`;
+                    card.innerHTML = `<div class="card-thumb">${thumbHTML}</div><div class="card-info"><div class="card-name">${ch.name}</div><span class="card-badge">${ch.category}</span></div><div class="actions"><button class="action-btn edit-btn" data-id="${ch.id}">✎</button><button class="action-btn del-btn" data-id="${ch.id}">✕</button></div>`;
+                    card.addEventListener('click', () => { activeIndex = idx; renderGrid(); playChannel(activeIndex); });
+                    card.querySelector('.del-btn').addEventListener('click', async (e) => { e.stopPropagation(); if (!isAdmin) return; await deleteChannelFromServer(ch.id); await loadChannels(); });
+                    card.querySelector('.edit-btn').addEventListener('click', (e) => { e.stopPropagation(); openEditModal(ch); });
+                    grid.appendChild(card);
+                });
+                updateCounts();
+            }
+            function updateCounts() {
+                const counts = { all: channels.length, youtube: 0, facebook: 0, web: 0, tv: 0 };
+                channels.forEach(c => { if (counts[c.category] !== undefined) counts[c.category]++; });
+                ['All','Yt','Fb','Web','Tv'].forEach((k,i) => { const el = document.getElementById('count'+['All','Yt','Fb','Web','Tv'][i]); if (el) el.textContent = counts[['all','youtube','facebook','web','tv'][i]]; });
+            }
+            function openEditModal(ch) {
+                editChannelId = ch.id; document.getElementById('editName').value = ch.name; document.getElementById('editUrl').value = ch.url;
+                document.getElementById('editCategory').value = ch.category; editModal.classList.add('open');
+            }
+            async function saveEdit() {
+                const name = document.getElementById('editName').value.trim(); const url = document.getElementById('editUrl').value.trim();
+                const category = document.getElementById('editCategory').value;
+                if (!name || !url) return showToast('Name and URL required', true);
+                await updateChannelOnServer(editChannelId, { name, url, category });
+                editModal.classList.remove('open'); await loadChannels();
+            }
+
+            document.getElementById('loginBtn').addEventListener('click', async () => {
+                const password = document.getElementById('adminPassword').value;
+                try {
+                    const res = await apiFetch('login', 'POST', { password });
+                    adminToken = res.token; isAdmin = true; loginOverlay.style.display = 'none';
+                    updateAdminUI(); showToast('🔓 Admin access granted');
+                    await loadChannels();
+                } catch (e) { showToast('❌ Wrong password', true); }
+            });
+            document.getElementById('guestLink').addEventListener('click', () => {
+                isAdmin = false; loginOverlay.style.display = 'none'; updateAdminUI(); loadChannels();
+            });
+            function updateAdminUI() {
+                addSection.classList.toggle('hidden', !isAdmin); logoutBtn.style.display = isAdmin ? 'flex' : 'none';
+                document.querySelectorAll('.actions .edit-btn, .actions .del-btn').forEach(b => b.style.display = isAdmin ? '' : 'none');
+            }
+            logoutBtn.addEventListener('click', () => { isAdmin = false; adminToken = null; updateAdminUI(); showToast('👋 Logged out'); });
+
+            document.getElementById('addChannelBtn').addEventListener('click', async () => {
+                if (!isAdmin) return showToast('Admin only', true);
+                const name = document.getElementById('channelNameInput').value.trim();
+                const url = document.getElementById('channelUrlInput').value.trim();
+                if (!name || !url) return showToast('Enter title and URL', true);
+                let cat = document.getElementById('channelCategorySelect').value;
+                if (cat === 'auto') cat = detectCategory(url);
+                try {
+                    await addChannelToServer({ name, url, category: cat, emoji: '📡', thumbnail: getYoutubeThumbnail(url) });
+                    document.getElementById('channelNameInput').value = ''; document.getElementById('channelUrlInput').value = '';
+                    await loadChannels();
+                    showToast('✅ Added');
+                } catch (e) { showToast(e.message, true); }
+            });
+
+            let debounce;
+            searchInput.addEventListener('input', () => { clearTimeout(debounce); debounce = setTimeout(() => { searchQuery = searchInput.value; renderGrid(); }, 150); });
+            document.getElementById('shuffleBtn').addEventListener('click', () => { if (!channels.length) return; activeIndex = Math.floor(Math.random() * channels.length); renderGrid(); playChannel(activeIndex); });
+            refreshBtn.addEventListener('click', reloadStream);
+            document.getElementById('exportBtn').addEventListener('click', () => { const data = JSON.stringify(channels.map(c => ({ name: c.name, url: c.url, category: c.category })), null, 2); const blob = new Blob([data], { type: 'application/json' }); const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'channels.json'; a.click(); });
+            document.getElementById('importBtn').addEventListener('click', () => { if (!isAdmin) return showToast('Admin only', true); document.getElementById('importFileInput').click(); });
+            document.getElementById('importFileInput').addEventListener('change', async (e) => { const file = e.target.files[0]; if (!file) return; const text = await file.text(); try { const arr = JSON.parse(text); for (const item of arr) { await addChannelToServer({ name: item.name, url: item.url, category: item.category || 'web' }); } await loadChannels(); showToast('📂 Imported'); } catch { showToast('Invalid file', true); } e.target.value = ''; });
+            document.getElementById('compactToggle').addEventListener('click', () => { document.body.classList.toggle('compact'); localStorage.setItem('compact', document.body.classList.contains('compact')); });
+            if (localStorage.getItem('compact') === 'true') document.body.classList.add('compact');
+            document.getElementById('themeToggle').addEventListener('click', () => { document.body.classList.toggle('light'); localStorage.setItem('theme', document.body.classList.contains('light') ? 'light' : 'dark'); });
+            if (localStorage.getItem('theme') === 'light') document.body.classList.add('light');
+            document.getElementById('cancelEdit').addEventListener('click', () => editModal.classList.remove('open'));
+            document.getElementById('saveEdit').addEventListener('click', saveEdit);
+            document.querySelectorAll('.tab').forEach(tab => tab.addEventListener('click', () => { document.querySelectorAll('.tab').forEach(t => t.classList.remove('active')); tab.classList.add('active'); activeCategory = tab.dataset.cat; renderGrid(); }));
+
+            function init() {
+                // load channels after login
+            }
+            init();
+        })();
+    </script>
+</body>
+</html>

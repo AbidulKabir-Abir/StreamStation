@@ -1,0 +1,10 @@
+{
+  "name": "streamstation-pro",
+  "version": "1.0.0",
+  "description": "Secure streaming hub",
+  "dependencies": {
+    "firebase-admin": "^11.0.0",
+    "jsonwebtoken": "^9.0.0",
+    "bcryptjs": "^2.4.3"
+  }
+}
