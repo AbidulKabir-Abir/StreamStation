@@ -3,10 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>StreamStation Pro • Ultra Secure</title>
+    <title>StreamStation Pro • Secured Viewer</title>
+    <!-- Firebase Web SDK (only public keys) -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
     <style>
-        /* Same compact styles as before */
         :root {
             --bg: #080c14; --surface: #0f1420; --surface2: #181e2c;
             --border: #1a2233; --text: #e0e4ec; --text2: #8892a5;
@@ -15,12 +17,16 @@
         * { margin:0; padding:0; box-sizing:border-box; }
         body { background:var(--bg); color:var(--text); font-family:'Segoe UI',system-ui,sans-serif; min-height:100vh; display:flex; justify-content:center; padding:4px; font-size:10px; }
         .app { max-width:1100px; width:100%; display:flex; flex-direction:column; gap:4px; }
-        .login-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.85); z-index:1000; display:flex; align-items:center; justify-content:center; }
-        .login-box { background:var(--surface); border-radius:12px; padding:20px; width:280px; text-align:center; }
+        /* Login overlay (Viewer + Admin) */
+        .login-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.9); z-index:1000; display:flex; align-items:center; justify-content:center; }
+        .login-box { background:var(--surface); border-radius:12px; padding:20px; width:300px; text-align:center; }
         .login-box h2 { margin-bottom:12px; font-size:14px; }
         .login-box input { width:100%; padding:8px; border-radius:6px; border:1.5px solid var(--border); background:#0f172a; color:#fff; margin-bottom:8px; font-size:11px; outline:none; }
-        .login-box button { width:100%; padding:8px; border-radius:6px; border:none; background:var(--accent); color:#000; font-weight:700; cursor:pointer; font-size:11px; }
-        .guest-link { margin-top:10px; font-size:9px; color:var(--text2); cursor:pointer; text-decoration:underline; }
+        .login-box button { width:100%; padding:8px; border-radius:6px; border:none; background:var(--accent); color:#000; font-weight:700; cursor:pointer; font-size:11px; margin-bottom:6px; }
+        .google-btn { background:#fff !important; color:#000 !important; display:flex; align-items:center; justify-content:center; gap:6px; border:1px solid #dadce0; }
+        .google-btn img { width:18px; height:18px; }
+        .switch-link { font-size:9px; color:var(--text2); cursor:pointer; text-decoration:underline; margin-top:8px; display:block; }
+        .divider { margin:10px 0; border-top:1px solid var(--border); }
         .header { display:flex; align-items:center; gap:6px; padding:2px 0; flex-wrap:wrap; }
         .logo { display:flex; align-items:center; gap:4px; }
         .logo .icon { width:26px; height:26px; border-radius:6px; background:linear-gradient(135deg,#38bdf8,#818cf8); display:flex; align-items:center; justify-content:center; font-size:14px; }
@@ -68,12 +74,26 @@
 </head>
 <body>
     <div class="app">
-        <div class="login-overlay" id="loginOverlay">
-            <div class="login-box">
+        <!-- Viewer auth overlay -->
+        <div class="login-overlay" id="authOverlay">
+            <div class="login-box" id="authBox">
+                <h2 id="authTitle">🔐 Viewer Login</h2>
+                <input type="email" id="authEmail" placeholder="Email" />
+                <input type="password" id="authPassword" placeholder="Password" />
+                <button id="authActionBtn">Login</button>
+                <button class="google-btn" id="googleSignInBtn">
+                    <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google logo"> Sign in with Google
+                </button>
+                <div class="divider"></div>
+                <span class="switch-link" id="authSwitch">Don't have an account? Register</span>
+                <span class="switch-link" id="adminSwitch" style="margin-top:6px;">Admin Login</span>
+            </div>
+            <!-- Admin login box -->
+            <div class="login-box" id="adminBox" style="display:none;">
                 <h2>🔐 Admin Login</h2>
-                <input type="password" id="adminPassword" placeholder="Enter password" />
-                <button id="loginBtn">Unlock</button>
-                <div class="guest-link" id="guestLink">Continue as Guest (view only)</div>
+                <input type="password" id="adminPassword" placeholder="Enter admin password" />
+                <button id="adminLoginBtn">Unlock</button>
+                <span class="switch-link" id="backToViewer">Back to Viewer Login</span>
             </div>
         </div>
 
@@ -88,6 +108,7 @@
                 <button class="btn" id="compactToggle">📐</button>
                 <button class="btn" id="themeToggle">🌓</button>
                 <button class="btn" id="logoutBtn" style="display:none;">🚪</button>
+                <button class="btn" id="viewerLogoutBtn" style="display:none;">🔒 Sign out</button>
             </div>
         </div>
 
@@ -147,12 +168,25 @@
 
     <script>
         (() => {
-            // ✅ UPDATED TO YOUR REAL NETLIFY FUNCTION URL
+            const firebaseConfig = {
+                apiKey: "AIzaSyAxf2AANYSTxAHzOzLa4RT8Eyi68Z8b0tA",
+                authDomain: "streamstation-4b55e.firebaseapp.com",
+                databaseURL: "https://streamstation-4b55e-default-rtdb.asia-southeast1.firebasedatabase.app",
+                projectId: "streamstation-4b55e",
+                storageBucket: "streamstation-4b55e.firebasestorage.app",
+                messagingSenderId: "873439558930",
+                appId: "1:873439558930:web:a17d4c50baf18df6abc7cb"
+            };
+            firebase.initializeApp(firebaseConfig);
+            const auth = firebase.auth();
+
             const API_BASE = 'https://streamstation.netlify.app/.netlify/functions/api';
 
             let channels = [], activeIndex = -1, activeCategory = 'all', searchQuery = '';
-            let hlsInstance = null, currentPlayerElement = null, adminToken = null, isAdmin = false;
+            let hlsInstance = null, currentPlayerElement = null;
+            let adminToken = null, isAdmin = false;
             let editChannelId = null;
+            let currentFirebaseUser = null;
 
             const grid = document.getElementById('channelGrid'), container = document.getElementById('playerContainer'),
                 fallbackText = document.getElementById('fallbackText'), currentLabel = document.getElementById('currentChannelLabel'),
@@ -160,7 +194,14 @@
                 fullscreenBtn = document.getElementById('fullscreenBtn'), refreshBtn = document.getElementById('refreshBtn'),
                 searchInput = document.getElementById('searchInput'), editModal = document.getElementById('editModal'),
                 addSection = document.getElementById('addSection'), logoutBtn = document.getElementById('logoutBtn'),
-                loginOverlay = document.getElementById('loginOverlay');
+                authOverlay = document.getElementById('authOverlay'), authBox = document.getElementById('authBox'),
+                adminBox = document.getElementById('adminBox'), authTitle = document.getElementById('authTitle'),
+                authEmail = document.getElementById('authEmail'), authPassword = document.getElementById('authPassword'),
+                authActionBtn = document.getElementById('authActionBtn'), authSwitch = document.getElementById('authSwitch'),
+                adminSwitch = document.getElementById('adminSwitch'), adminPassword = document.getElementById('adminPassword'),
+                adminLoginBtn = document.getElementById('adminLoginBtn'), backToViewer = document.getElementById('backToViewer'),
+                viewerLogoutBtn = document.getElementById('viewerLogoutBtn'),
+                googleSignInBtn = document.getElementById('googleSignInBtn');
 
             let toastTimer;
             function showToast(msg, error=false) {
@@ -168,27 +209,120 @@
                 toastEl.classList.add('show'); toastTimer = setTimeout(() => toastEl.classList.remove('show'), 2000);
             }
 
-            function detectCategory(url) {
-                const u = url.trim();
-                if (/\.m3u8(\?.*)?$/i.test(u) || /\/hls\//i.test(u)) return 'web';
-                if (/facebook\.com|fb\.watch|fb\.com/i.test(u)) return 'facebook';
-                if (/youtube\.com|youtu\.be|youtube-nocookie\.com/i.test(u)) return 'youtube';
-                return 'web';
+            // ── Firebase Auth UI ──────────────────────────────
+            let isRegisterMode = false;
+            function updateAuthUI() {
+                authTitle.textContent = isRegisterMode ? '📝 Register' : '🔐 Viewer Login';
+                authActionBtn.textContent = isRegisterMode ? 'Register' : 'Login';
+                authSwitch.textContent = isRegisterMode ? 'Already have an account? Login' : 'Don\'t have an account? Register';
+                // Show/hide email fields for Google-only flow? Keep them always.
             }
-            function buildFacebookEmbed(url) { return url.includes('facebook.com/plugins/video.php') ? url : `https://www.facebook.com/plugins/video.php?href=${encodeURIComponent(url)}&show_text=0&autoplay=1&mute=1`; }
-            function getYoutubeEmbed(url) {
-                const m = url.match(/(?:youtube(?:-nocookie)?\.com\/(?:[^\/\n\s]+\/\S+\/|(?:v|e(?:mbed)?)\/|\S*?[?&]v=)|youtu\.be\/)([a-zA-Z0-9_-]{11})/i);
-                return m ? `https://www.youtube-nocookie.com/embed/${m[1]}?autoplay=1&mute=1&controls=1&playsinline=1&rel=0` : url;
-            }
-            function getYoutubeThumbnail(url) {
-                const m = url.match(/(?:youtube(?:-nocookie)?\.com\/(?:[^\/\n\s]+\/\S+\/|(?:v|e(?:mbed)?)\/|\S*?[?&]v=)|youtu\.be\/)([a-zA-Z0-9_-]{11})/i);
-                return m ? `https://img.youtube.com/vi/${m[1]}/hqdefault.jpg` : null;
-            }
+            authSwitch.addEventListener('click', () => { isRegisterMode = !isRegisterMode; updateAuthUI(); });
+            adminSwitch.addEventListener('click', () => { authBox.style.display = 'none'; adminBox.style.display = 'block'; });
+            backToViewer.addEventListener('click', () => { adminBox.style.display = 'none'; authBox.style.display = 'block'; });
 
-            async function apiFetch(path, method='GET', body=null, needAuth=false) {
+            // Email/Password login/register
+            authActionBtn.addEventListener('click', async () => {
+                const email = authEmail.value.trim(), pass = authPassword.value;
+                if (!email || !pass) return showToast('Email and password required', true);
+                try {
+                    if (isRegisterMode) await auth.createUserWithEmailAndPassword(email, pass);
+                    else await auth.signInWithEmailAndPassword(email, pass);
+                } catch (e) { showToast(e.message, true); }
+            });
+
+            // Google Sign-In
+            googleSignInBtn.addEventListener('click', async () => {
+                const provider = new firebase.auth.GoogleAuthProvider();
+                try {
+                    await auth.signInWithPopup(provider);
+                } catch (e) { showToast(e.message, true); }
+            });
+
+            // Admin login (separate JWT)
+            adminLoginBtn.addEventListener('click', async () => {
+                const pass = adminPassword.value;
+                try {
+                    const res = await fetch(`${API_BASE}/admin-login`, {
+                        method: 'POST', headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({ password: pass })
+                    });
+                    if (!res.ok) throw new Error('Wrong password');
+                    const data = await res.json();
+                    adminToken = data.token;
+                    isAdmin = true;
+                    adminBox.style.display = 'none';
+                    authOverlay.style.display = 'none';
+                    updateAdminUI();
+                    showToast('🔓 Admin access granted');
+                    loadChannels();
+                } catch (e) { showToast(e.message, true); }
+            });
+
+            // Sign out viewer
+            viewerLogoutBtn.addEventListener('click', () => {
+                auth.signOut();
+                currentFirebaseUser = null;
+                channels = [];
+                activeIndex = -1;
+                renderGrid();
+                destroyPlayer();
+                fallbackText.style.display = '';
+                currentLabel.textContent = '-';
+                authOverlay.style.display = 'flex';
+                authBox.style.display = 'block';
+                adminBox.style.display = 'none';
+                viewerLogoutBtn.style.display = 'none';
+                isAdmin = false;
+                adminToken = null;
+                updateAdminUI();
+            });
+
+            // Auth state observer
+            auth.onAuthStateChanged(async (user) => {
+                if (user) {
+                    currentFirebaseUser = user;
+                    authOverlay.style.display = 'none';
+                    viewerLogoutBtn.style.display = 'flex';
+                    if (!isAdmin) {
+                        await loadChannels();
+                    }
+                } else {
+                    currentFirebaseUser = null;
+                    viewerLogoutBtn.style.display = 'none';
+                    if (!isAdmin) {
+                        authOverlay.style.display = 'flex';
+                        channels = [];
+                        renderGrid();
+                    }
+                }
+            });
+
+            function updateAdminUI() {
+                addSection.classList.toggle('hidden', !isAdmin);
+                logoutBtn.style.display = isAdmin ? 'flex' : 'none';
+                document.querySelectorAll('.actions .edit-btn, .actions .del-btn').forEach(b => b.style.display = isAdmin ? '' : 'none');
+            }
+            logoutBtn.addEventListener('click', () => {
+                isAdmin = false;
+                adminToken = null;
+                updateAdminUI();
+                showToast('👋 Admin logged out');
+            });
+
+            // ── API helpers ──────────────────────────────────
+            async function apiFetch(path, method='GET', body=null, useAdminToken=false) {
                 const headers = { 'Content-Type': 'application/json' };
-                if (needAuth && adminToken) headers['Authorization'] = `Bearer ${adminToken}`;
-                const res = await fetch(`${API_BASE}/${path}`, { method, headers, body: body ? JSON.stringify(body) : undefined });
+                if (useAdminToken && adminToken) {
+                    headers['Authorization'] = `Bearer ${adminToken}`;
+                } else if (currentFirebaseUser) {
+                    const idToken = await currentFirebaseUser.getIdToken();
+                    headers['Authorization'] = `Bearer ${idToken}`;
+                }
+                const res = await fetch(`${API_BASE}/${path}`, {
+                    method, headers,
+                    body: body ? JSON.stringify(body) : undefined
+                });
                 if (!res.ok) {
                     const err = await res.json().catch(() => ({ error: 'Network error' }));
                     throw new Error(err.error || 'Request failed');
@@ -199,7 +333,7 @@
             async function loadChannels() {
                 try {
                     channels = await apiFetch('channels');
-                    channels = channels.map(c => ({ ...c, firebaseKey: c.id, thumbnail: c.thumbnail || getYoutubeThumbnail(c.url), emoji: c.emoji || '📡' }));
+                    channels = channels.map(c => ({ ...c, firebaseKey: c.id, thumbnail: c.thumbnail || null, emoji: c.emoji || '📡' }));
                     if (activeIndex >= channels.length) activeIndex = channels.length > 0 ? 0 : -1;
                     renderGrid();
                     if (activeIndex >= 0) playChannel(activeIndex);
@@ -210,6 +344,7 @@
             async function deleteChannelFromServer(id) { await apiFetch(`channels/${id}`, 'DELETE', null, true); }
             async function updateChannelOnServer(id, data) { await apiFetch(`channels/${id}`, 'PUT', data, true); }
 
+            // ── Player ─────────────────────────────────────
             function destroyPlayer() {
                 if (hlsInstance) { hlsInstance.destroy(); hlsInstance = null; }
                 if (currentPlayerElement) { currentPlayerElement.remove(); currentPlayerElement = null; }
@@ -221,24 +356,18 @@
                 const ch = channels[index]; activeIndex = index; currentLabel.textContent = ch.name; refreshBtn.classList.add('active');
                 const url = ch.url.trim(), cat = ch.category;
                 if (cat === 'youtube') {
-                    const embed = getYoutubeEmbed(url); const iframe = document.createElement('iframe');
-                    iframe.src = embed; iframe.allow = 'autoplay; clipboard-write; encrypted-media; picture-in-picture; web-share; fullscreen';
-                    iframe.allowFullscreen = true; iframe.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;border:0;';
-                    container.appendChild(iframe); currentPlayerElement = iframe;
+                    const embed = (url.includes('youtube.com/embed') || url.includes('youtube-nocookie.com/embed')) ? url : `https://www.youtube-nocookie.com/embed/${url.match(/(?:v=|\/)([a-zA-Z0-9_-]{11})/)?.[1] || ''}?autoplay=1&mute=1&controls=1&playsinline=1&rel=0`;
+                    const iframe = document.createElement('iframe'); iframe.src = embed; iframe.allow = 'autoplay; clipboard-write; encrypted-media; picture-in-picture; web-share; fullscreen'; iframe.allowFullscreen = true; iframe.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;border:0;'; container.appendChild(iframe); currentPlayerElement = iframe;
                 } else if (cat === 'facebook') {
-                    const embed = buildFacebookEmbed(url); const iframe = document.createElement('iframe');
-                    iframe.src = embed; iframe.allow = 'autoplay; clipboard-write; encrypted-media; picture-in-picture; web-share; fullscreen';
-                    iframe.allowFullscreen = true; iframe.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;border:0;';
-                    container.appendChild(iframe); currentPlayerElement = iframe;
+                    const embed = url.includes('facebook.com/plugins/video.php') ? url : `https://www.facebook.com/plugins/video.php?href=${encodeURIComponent(url)}&show_text=0&autoplay=1&mute=1`;
+                    const iframe = document.createElement('iframe'); iframe.src = embed; iframe.allow = 'autoplay; clipboard-write; encrypted-media; picture-in-picture; web-share; fullscreen'; iframe.allowFullscreen = true; iframe.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;border:0;'; container.appendChild(iframe); currentPlayerElement = iframe;
                 } else {
-                    const iframe = document.createElement('iframe'); iframe.src = url;
-                    iframe.sandbox = 'allow-scripts allow-same-origin allow-popups allow-forms'; iframe.allow = 'fullscreen';
-                    iframe.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;border:0;';
-                    container.appendChild(iframe); currentPlayerElement = iframe;
+                    const iframe = document.createElement('iframe'); iframe.src = url; iframe.sandbox = 'allow-scripts allow-same-origin allow-popups allow-forms'; iframe.allow = 'fullscreen'; iframe.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;border:0;'; container.appendChild(iframe); currentPlayerElement = iframe;
                 }
             }
             function reloadStream() { if (activeIndex >= 0) playChannel(activeIndex); }
 
+            // ── Render ─────────────────────────────────────
             function getFilteredSorted() {
                 let list = [...channels];
                 if (activeCategory !== 'all') list = list.filter(c => c.category === activeCategory);
@@ -277,39 +406,22 @@
                 editModal.classList.remove('open'); await loadChannels();
             }
 
-            document.getElementById('loginBtn').addEventListener('click', async () => {
-                const password = document.getElementById('adminPassword').value;
-                try {
-                    const res = await apiFetch('login', 'POST', { password });
-                    adminToken = res.token; isAdmin = true; loginOverlay.style.display = 'none';
-                    updateAdminUI(); showToast('🔓 Admin access granted');
-                    await loadChannels();
-                } catch (e) { showToast('❌ Wrong password', true); }
-            });
-            document.getElementById('guestLink').addEventListener('click', () => {
-                isAdmin = false; loginOverlay.style.display = 'none'; updateAdminUI(); loadChannels();
-            });
-            function updateAdminUI() {
-                addSection.classList.toggle('hidden', !isAdmin); logoutBtn.style.display = isAdmin ? 'flex' : 'none';
-                document.querySelectorAll('.actions .edit-btn, .actions .del-btn').forEach(b => b.style.display = isAdmin ? '' : 'none');
-            }
-            logoutBtn.addEventListener('click', () => { isAdmin = false; adminToken = null; updateAdminUI(); showToast('👋 Logged out'); });
-
+            // ── Add channel ──────────────────────────────────
             document.getElementById('addChannelBtn').addEventListener('click', async () => {
                 if (!isAdmin) return showToast('Admin only', true);
                 const name = document.getElementById('channelNameInput').value.trim();
                 const url = document.getElementById('channelUrlInput').value.trim();
                 if (!name || !url) return showToast('Enter title and URL', true);
                 let cat = document.getElementById('channelCategorySelect').value;
-                if (cat === 'auto') cat = detectCategory(url);
+                if (cat === 'auto') cat = /facebook\.com/i.test(url) ? 'facebook' : /youtube\.com|youtu\.be/i.test(url) ? 'youtube' : 'web';
                 try {
-                    await addChannelToServer({ name, url, category: cat, emoji: '📡', thumbnail: getYoutubeThumbnail(url) });
+                    await addChannelToServer({ name, url, category: cat, emoji: '📡' });
                     document.getElementById('channelNameInput').value = ''; document.getElementById('channelUrlInput').value = '';
                     await loadChannels();
-                    showToast('✅ Added');
                 } catch (e) { showToast(e.message, true); }
             });
 
+            // ── Other UI ────────────────────────────────────
             let debounce;
             searchInput.addEventListener('input', () => { clearTimeout(debounce); debounce = setTimeout(() => { searchQuery = searchInput.value; renderGrid(); }, 150); });
             document.getElementById('shuffleBtn').addEventListener('click', () => { if (!channels.length) return; activeIndex = Math.floor(Math.random() * channels.length); renderGrid(); playChannel(activeIndex); });
@@ -325,10 +437,9 @@
             document.getElementById('saveEdit').addEventListener('click', saveEdit);
             document.querySelectorAll('.tab').forEach(tab => tab.addEventListener('click', () => { document.querySelectorAll('.tab').forEach(t => t.classList.remove('active')); tab.classList.add('active'); activeCategory = tab.dataset.cat; renderGrid(); }));
 
-            function init() {
-                // load channels after login
-            }
-            init();
+            // Initial state
+            authOverlay.style.display = 'flex';
+            updateAuthUI();
         })();
     </script>
 </body>
