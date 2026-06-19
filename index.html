@@ -215,7 +215,6 @@
                 authTitle.textContent = isRegisterMode ? '📝 Register' : '🔐 Viewer Login';
                 authActionBtn.textContent = isRegisterMode ? 'Register' : 'Login';
                 authSwitch.textContent = isRegisterMode ? 'Already have an account? Login' : 'Don\'t have an account? Register';
-                // Show/hide email fields for Google-only flow? Keep them always.
             }
             authSwitch.addEventListener('click', () => { isRegisterMode = !isRegisterMode; updateAuthUI(); });
             adminSwitch.addEventListener('click', () => { authBox.style.display = 'none'; adminBox.style.display = 'block'; });
