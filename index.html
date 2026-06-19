@@ -180,7 +180,8 @@
             firebase.initializeApp(firebaseConfig);
             const auth = firebase.auth();
 
-            const API_BASE = 'https://streamstation.netlify.app/.netlify/functions/api';
+            // ✅ UPDATED TO YOUR CUSTOM DOMAIN
+            const API_BASE = 'https://streamstation.darkranks.com/.netlify/functions/api';
 
             let channels = [], activeIndex = -1, activeCategory = 'all', searchQuery = '';
             let hlsInstance = null, currentPlayerElement = null;
