@@ -3,288 +3,151 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DarkRanks ULTRA • Stream Manager</title>
+    <title>StreamStation Pro • Secured Viewer</title>
+    <!-- Firebase Web SDK (only public keys) -->
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
     <style>
         :root {
-            --bg: #050510;
-            --surface: #0a0a1a;
-            --surface2: #12122a;
-            --border: #1f1f3f;
-            --text: #e0e4ff;
-            --text2: #8890c0;
-            --accent: #00e5ff;
-            --pink: #ff006e;
-            --radius: 10px;
-            --shadow: 0 4px 15px rgba(0,0,0,0.5);
-            --transition: 0.2s ease;
+            --bg: #080c14; --surface: #0f1420; --surface2: #181e2c;
+            --border: #1a2233; --text: #e0e4ec; --text2: #8892a5;
+            --accent: #38bdf8; --radius: 6px; --shadow: 0 2px 6px rgba(0,0,0,0.3);
         }
         * { margin:0; padding:0; box-sizing:border-box; }
-        body {
-            background: radial-gradient(ellipse at 50% 0%, #0f0f25, #050510 70%);
-            color: var(--text);
-            font-family: 'Segoe UI', system-ui, sans-serif;
-            min-height: 100vh;
-            display: flex;
-            justify-content: center;
-            overflow-x: hidden;
-            font-size: 10px;
-        }
-        .app { max-width:1400px; width:100%; display:flex; flex-direction:column; gap:6px; padding:6px; }
-
-        /* LOGIN OVERLAY */
-        .login-overlay {
-            position:fixed; inset:0; background:rgba(0,0,0,0.95); z-index:2000;
-            display:flex; align-items:center; justify-content:center;
-        }
-        .login-box {
-            background:var(--surface); border-radius:12px; padding:24px; width:300px; text-align:center;
-            border:1px solid var(--accent); box-shadow:0 0 30px rgba(0,229,255,0.2);
-        }
-        .login-box h2 { font-size:18px; color:var(--accent); margin-bottom:15px; }
-        .login-box input { width:100%; padding:10px; border-radius:6px; border:1px solid var(--border); background:#0f0f20; color:#fff; margin-bottom:10px; font-size:11px; outline:none; }
-        .btn-primary { background:var(--accent); color:#000; border:none; font-weight:700; cursor:pointer; padding:8px; border-radius:6px; width:100%; }
-        .google-btn { background:#fff; color:#000; display:flex; align-items:center; justify-content:center; gap:6px; margin:10px 0; border:1px solid #dadce0; }
-        .google-btn img { width:18px; }
-
-        /* HEADER */
-        .header {
-            display:flex; align-items:center; gap:10px; flex-wrap:wrap;
-            background:var(--surface); border-radius:var(--radius); padding:8px 12px;
-            border:1px solid var(--border); box-shadow:var(--shadow);
-        }
-        .logo { display:flex; align-items:center; gap:8px; cursor:pointer; user-select:none; }
-        .skull-icon { font-size:28px; display:inline-block; animation: flip 3s infinite alternate; }
-        @keyframes flip { 0%{transform:rotateY(0);} 100%{transform:rotateY(180deg);} }
-        .brand-text { font-weight:800; font-size:16px; background:linear-gradient(135deg, var(--accent), var(--pink)); -webkit-background-clip:text; -webkit-text-fill-color:transparent; }
-        .ultra-badge { background:var(--pink); color:#fff; font-size:9px; padding:2px 6px; border-radius:10px; font-weight:700; letter-spacing:1px; }
-        .live-badge { display:flex; align-items:center; gap:5px; background:var(--surface2); padding:4px 10px; border-radius:20px; font-size:11px; }
-        .live-dot { width:8px; height:8px; border-radius:50%; background:#22c55e; animation:pulse 1.5s infinite; }
-        @keyframes pulse { 0%,100%{box-shadow:0 0 0 0 rgba(34,197,94,0.6);} 50%{box-shadow:0 0 0 8px rgba(34,197,94,0);} }
-        .clock-date { margin-left:auto; display:flex; gap:10px; font-size:11px; color:var(--text2); }
-        .support-notice { width:100%; overflow:hidden; white-space:nowrap; background:var(--surface2); border-radius:4px; padding:4px 8px; font-size:9px; color:var(--text2); margin-top:4px; }
-        .support-notice span { display:inline-block; padding-left:100%; animation: scrollText 20s linear infinite; }
-        @keyframes scrollText { 0%{transform:translateX(0);} 100%{transform:translateX(-100%);} }
-        .btn { padding:4px 8px; border-radius:5px; border:1px solid var(--border); background:var(--surface); color:var(--text2); font-size:9px; cursor:pointer; display:flex; align-items:center; gap:2px; font-weight:600; }
+        body { background:var(--bg); color:var(--text); font-family:'Segoe UI',system-ui,sans-serif; min-height:100vh; display:flex; justify-content:center; padding:4px; font-size:10px; }
+        .app { max-width:1100px; width:100%; display:flex; flex-direction:column; gap:4px; }
+        /* Login overlay (Viewer + Admin) */
+        .login-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.9); z-index:1000; display:flex; align-items:center; justify-content:center; }
+        .login-box { background:var(--surface); border-radius:12px; padding:20px; width:300px; text-align:center; }
+        .login-box h2 { margin-bottom:12px; font-size:14px; }
+        .login-box input { width:100%; padding:8px; border-radius:6px; border:1.5px solid var(--border); background:#0f172a; color:#fff; margin-bottom:8px; font-size:11px; outline:none; }
+        .login-box button { width:100%; padding:8px; border-radius:6px; border:none; background:var(--accent); color:#000; font-weight:700; cursor:pointer; font-size:11px; margin-bottom:6px; }
+        .google-btn { background:#fff !important; color:#000 !important; display:flex; align-items:center; justify-content:center; gap:6px; border:1px solid #dadce0; }
+        .google-btn img { width:18px; height:18px; }
+        .switch-link { font-size:9px; color:var(--text2); cursor:pointer; text-decoration:underline; margin-top:8px; display:block; }
+        .divider { margin:10px 0; border-top:1px solid var(--border); }
+        .header { display:flex; align-items:center; gap:6px; padding:2px 0; flex-wrap:wrap; }
+        .logo { display:flex; align-items:center; gap:4px; }
+        .logo .icon { width:26px; height:26px; border-radius:6px; background:linear-gradient(135deg,#38bdf8,#818cf8); display:flex; align-items:center; justify-content:center; font-size:14px; }
+        .logo h1 { font-size:0.9rem; font-weight:800; background:linear-gradient(135deg,#f1f5f9,#38bdf8); -webkit-background-clip:text; -webkit-text-fill-color:transparent; }
+        .search-wrap { flex:1 1 130px; position:relative; }
+        .search-wrap input { width:100%; padding:4px 8px 4px 24px; border-radius:12px; border:1.5px solid var(--border); background:var(--surface); color:var(--text); font-size:10px; outline:none; }
+        .search-wrap .search-icon { position:absolute; left:7px; top:50%; transform:translateY(-50%); color:#64748b; font-size:11px; pointer-events:none; }
+        .now-playing { background:var(--surface2); padding:3px 8px; border-radius:10px; font-size:9px; white-space:nowrap; display:flex; align-items:center; gap:4px; flex-shrink:0; }
+        .now-playing .live-dot { width:5px; height:5px; border-radius:50%; background:#22c55e; animation:pulse 1.5s infinite; }
+        @keyframes pulse { 0%,100%{ box-shadow:0 0 0 0 rgba(34,197,94,0.6); } 50%{ box-shadow:0 0 0 5px rgba(34,197,94,0); } }
+        .btn { padding:3px 7px; border-radius:5px; border:1px solid var(--border); background:var(--surface); color:var(--text2); font-size:9px; cursor:pointer; display:flex; align-items:center; gap:2px; font-weight:600; }
         .btn:hover { background:var(--surface2); color:var(--text); border-color:var(--accent); }
-
-        /* PLAYER */
-        .player-wrapper {
-            position:relative; background:#000; border-radius:var(--radius); overflow:hidden;
-            border:1px solid var(--accent); box-shadow:0 0 20px rgba(0,229,255,0.15);
-        }
-        #playerContainer { width:100%; aspect-ratio:16/9; position:relative; background:#020617; }
+        .btn.primary { background:var(--accent); color:#000; border:none; }
+        .player-wrapper { background:#0a101f; border-radius:8px; overflow:hidden; border:1px solid var(--border); }
+        #playerContainer { width:100%; aspect-ratio:16/9; background:#020617; position:relative; display:flex; align-items:center; justify-content:center; }
         #playerContainer iframe, #playerContainer video { width:100%; height:100%; border:0; position:absolute; top:0; left:0; }
-        .player-controls {
-            position:absolute; bottom:0; left:0; right:0; background:linear-gradient(transparent, rgba(0,0,0,0.9));
-            display:flex; align-items:center; gap:8px; padding:8px 12px; opacity:0; transition:opacity 0.3s;
-            pointer-events:none; z-index:10;
-        }
-        .player-wrapper:hover .player-controls, .player-wrapper.show-controls .player-controls { opacity:1; pointer-events:auto; }
-        .ctrl-btn { background:none; border:none; color:#fff; cursor:pointer; font-size:14px; padding:4px; }
-        .progress-bar { flex:1; height:4px; background:#333; border-radius:2px; cursor:pointer; margin:0 8px; }
-        .progress-filled { height:100%; background:var(--accent); width:0%; border-radius:2px; }
-        .volume-slider { width:60px; accent-color:var(--accent); }
-        .nav-arrow { position:absolute; top:50%; transform:translateY(-50%); font-size:28px; color:#fff; background:rgba(0,0,0,0.5); border:none; cursor:pointer; padding:8px; border-radius:50%; z-index:9; }
-        .nav-prev { left:10px; } .nav-next { right:10px; }
-        .channel-info-overlay {
-            position:absolute; top:0; left:0; right:0; background:linear-gradient(rgba(0,0,0,0.8), transparent);
-            padding:10px; font-size:12px; font-weight:600; opacity:0; transition:opacity 0.3s; pointer-events:none;
-        }
-        .player-wrapper:hover .channel-info-overlay, .player-wrapper.show-controls .channel-info-overlay { opacity:1; }
-        .loading-overlay, .error-overlay {
-            position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
-            background:rgba(0,0,0,0.7); color:#fff; font-size:14px; z-index:8; display:none;
-        }
-        .error-overlay button { margin-top:10px; padding:6px 12px; background:var(--accent); color:#000; border:none; border-radius:4px; cursor:pointer; }
-
-        /* CONTENT PANEL (SIDEBAR) */
-        .sidebar-overlay {
-            position:fixed; inset:0; background:rgba(0,0,0,0.7); z-index:100;
-            display:none; align-items:flex-end; justify-content:center;
-        }
-        .sidebar-overlay.open { display:flex; }
-        .channel-panel {
-            background:var(--surface); border-radius:20px 20px 0 0; width:100%; max-height:75vh;
-            overflow-y:auto; padding:16px; border-top:2px solid var(--accent);
-            box-shadow:0 -10px 30px rgba(0,0,0,0.8); touch-action:pan-y;
-        }
-        .panel-handle { width:40px; height:4px; background:var(--text2); border-radius:2px; margin:0 auto 12px; cursor:grab; }
-        .source-tabs { display:flex; gap:4px; margin-bottom:12px; flex-wrap:wrap; }
-        .source-tab { padding:6px 14px; border-radius:20px; background:var(--surface2); color:var(--text2); cursor:pointer; border:1px solid transparent; font-weight:700; font-size:10px; transition:var(--transition); }
-        .source-tab.active { background:var(--accent); color:#000; }
-        .category-filters { display:flex; gap:4px; flex-wrap:wrap; margin-bottom:8px; }
-        .cat-filter { padding:4px 10px; border-radius:12px; background:var(--surface2); color:var(--text2); cursor:pointer; font-size:9px; border:1px solid transparent; }
-        .cat-filter.active { background:var(--pink); color:#fff; }
-        .search-box { width:100%; padding:8px 12px; border-radius:8px; border:1px solid var(--border); background:#0f0f20; color:#fff; margin-bottom:10px; font-size:11px; }
-        .content-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(130px,1fr)); gap:8px; }
-        .channel-card {
-            background:var(--surface2); border-radius:8px; overflow:hidden; cursor:pointer;
-            border:1px solid transparent; transition:var(--transition); position:relative;
-        }
-        .channel-card:hover { border-color:var(--accent); transform:translateY(-2px); }
-        .channel-card.active { border-color:var(--accent); box-shadow:0 0 12px rgba(0,229,255,0.3); }
-        .card-thumb { width:100%; aspect-ratio:16/9; background:#1a1a2e; display:flex; align-items:center; justify-content:center; font-size:24px; position:relative; }
+        .fallback-text { color:#475569; text-align:center; padding:20px; font-size:11px; }
+        .tabs { display:flex; gap:2px; flex-wrap:wrap; }
+        .tab { padding:3px 8px; border-radius:10px; border:1.5px solid transparent; background:var(--surface); color:var(--text2); font-size:9px; font-weight:600; cursor:pointer; display:flex; align-items:center; gap:2px; }
+        .tab.active { background:#1a2d44; color:#fff; border-color:var(--accent); }
+        .tab .count { background:#1e293b; padding:1px 4px; border-radius:4px; font-size:7px; }
+        .channel-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(120px,1fr)); gap:5px; }
+        @media (min-width:600px) { .channel-grid { grid-template-columns:repeat(auto-fill, minmax(130px,1fr)); } }
+        .channel-card { background:var(--surface); border-radius:var(--radius); overflow:hidden; cursor:pointer; border:2px solid transparent; position:relative; box-shadow:var(--shadow); }
+        .channel-card:hover { border-color:#3b4f6b; }
+        .channel-card.active { border-color:var(--accent); }
+        .card-thumb { width:100%; aspect-ratio:16/9; background:#1a2335; position:relative; }
         .card-thumb img { width:100%; height:100%; object-fit:cover; }
-        .card-thumb .fav-btn {
-            position:absolute; top:4px; right:4px; background:rgba(0,0,0,0.6); border:none;
-            color:#fff; font-size:12px; cursor:pointer; border-radius:50%; width:22px; height:22px;
-            display:flex; align-items:center; justify-content:center; opacity:0; transition:opacity 0.2s;
-        }
-        .channel-card:hover .card-thumb .fav-btn { opacity:1; }
-        .card-thumb .fav-btn.favorited { color:var(--pink); }
-        .card-info { padding:4px 6px; }
-        .card-name { font-size:10px; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-        .card-meta { display:flex; align-items:center; gap:4px; margin-top:2px; }
-        .card-badge { font-size:7px; padding:1px 4px; border-radius:3px; font-weight:700; text-transform:uppercase; }
-        .card-actions { position:absolute; top:4px; left:4px; display:flex; gap:3px; opacity:0; transition:opacity 0.2s; }
-        .channel-card:hover .card-actions { opacity:1; }
-        .action-btn { width:20px; height:20px; border-radius:50%; background:rgba(0,0,0,0.7); color:#fff; border:none; font-size:9px; cursor:pointer; display:flex; align-items:center; justify-content:center; }
-
-        /* ADD SECTION (ADMIN) */
-        .add-section { background:var(--surface); border-radius:8px; padding:8px; border:1px dashed var(--accent); display:flex; gap:6px; margin-top:10px; }
+        .card-thumb .placeholder { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-size:20px; }
+        .card-info { padding:3px 5px; }
+        .card-name { font-size:9px; font-weight:600; line-height:1.2; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+        .card-badge { font-size:7px; padding:1px 3px; border-radius:3px; margin-top:1px; display:inline-block; font-weight:700; text-transform:uppercase; }
+        .actions { position:absolute; top:2px; right:2px; display:flex; gap:2px; opacity:0; transition:opacity 0.2s; z-index:5; }
+        .channel-card:hover .actions { opacity:1; }
+        .action-btn { width:18px; height:18px; border-radius:50%; background:rgba(0,0,0,0.7); color:#fff; border:none; font-size:8px; cursor:pointer; display:flex; align-items:center; justify-content:center; }
+        .add-section { background:var(--surface); border-radius:8px; padding:5px 8px; border:1px dashed #1e3a50; display:flex; gap:4px; align-items:center; flex-wrap:wrap; }
         .add-section.hidden { display:none; }
-        .add-section input, .add-section select { flex:1; padding:6px; border-radius:4px; border:1px solid var(--border); background:#0f0f20; color:#fff; font-size:10px; }
-
-        /* MODAL */
-        .modal { position:fixed; inset:0; background:rgba(0,0,0,0.8); display:flex; align-items:center; justify-content:center; z-index:300; display:none; }
-        .modal.open { display:flex; }
-        .modal-content { background:var(--surface); border-radius:12px; padding:16px; width:90%; max-width:350px; border:1px solid var(--accent); }
-        .modal-content h3 { margin-bottom:10px; }
-        .modal-content input, .modal-content select { width:100%; padding:8px; border-radius:4px; border:1px solid var(--border); background:#0f0f20; color:#fff; margin-bottom:8px; }
-        .modal-actions { display:flex; gap:8px; justify-content:flex-end; }
-
-        .toast { position:fixed; bottom:20px; right:20px; background:var(--surface); color:var(--text); padding:8px 16px; border-radius:8px; border:1px solid var(--accent); z-index:999; opacity:0; transition:opacity 0.3s; }
-        .toast.show { opacity:1; }
-
-        @media (max-width:600px) {
-            .header { gap:4px; }
-            .brand-text { font-size:14px; }
-            .clock-date { display:none; }
-        }
+        .add-section input, .add-section select { padding:3px 6px; border-radius:4px; border:1.5px solid var(--border); background:#0f172a; color:#fff; font-size:9px; flex:1 1 80px; }
+        .modal { position:fixed; inset:0; background:rgba(0,0,0,0.6); display:flex; align-items:center; justify-content:center; z-index:99; opacity:0; pointer-events:none; }
+        .modal.open { opacity:1; pointer-events:auto; }
+        .modal-content { background:var(--surface); border-radius:10px; padding:12px; width:90%; max-width:350px; }
+        .toast { position:fixed; bottom:12px; right:12px; background:#1a2332; color:#e2e8f0; padding:6px 12px; border-radius:6px; font-size:9px; z-index:999; opacity:0; transform:translateY(10px); transition:all 0.3s; }
+        .toast.show { opacity:1; transform:translateY(0); }
     </style>
 </head>
 <body>
     <div class="app">
-        <!-- LOGIN OVERLAY -->
+        <!-- Viewer auth overlay -->
         <div class="login-overlay" id="authOverlay">
             <div class="login-box" id="authBox">
-                <h2>🔐 Viewer Login</h2>
+                <h2 id="authTitle">🔐 Viewer Login</h2>
                 <input type="email" id="authEmail" placeholder="Email" />
                 <input type="password" id="authPassword" placeholder="Password" />
-                <button class="btn-primary" id="authActionBtn">Login</button>
+                <button id="authActionBtn">Login</button>
                 <button class="google-btn" id="googleSignInBtn">
-                    <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg"> Sign in with Google
+                    <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google logo"> Sign in with Google
                 </button>
-                <span style="font-size:10px;color:var(--text2);cursor:pointer;" id="authSwitch">Register</span>
-                <span style="font-size:10px;color:var(--text2);cursor:pointer;margin-top:6px;display:block;" id="adminSwitch">Admin Login</span>
+                <div class="divider"></div>
+                <span class="switch-link" id="authSwitch">Don't have an account? Register</span>
+                <span class="switch-link" id="adminSwitch" style="margin-top:6px;">Admin Login</span>
             </div>
+            <!-- Admin login box -->
             <div class="login-box" id="adminBox" style="display:none;">
-                <h2>🔐 Admin</h2>
-                <input type="password" id="adminPassword" placeholder="Admin password" />
-                <button class="btn-primary" id="adminLoginBtn">Unlock</button>
-                <span style="font-size:10px;color:var(--text2);cursor:pointer;" id="backToViewer">Back</span>
+                <h2>🔐 Admin Login</h2>
+                <input type="password" id="adminPassword" placeholder="Enter admin password" />
+                <button id="adminLoginBtn">Unlock</button>
+                <span class="switch-link" id="backToViewer">Back to Viewer Login</span>
             </div>
         </div>
 
-        <!-- HEADER -->
         <div class="header">
-            <div class="logo" id="togglePanelBtn">
-                <span class="skull-icon">💀</span>
-                <span class="brand-text">DarkRanks</span>
-                <span class="ultra-badge">ULTRA</span>
-            </div>
-            <div class="live-badge"><span class="live-dot"></span> <strong id="liveCount">0</strong> streams</div>
-            <div class="clock-date">
-                <span id="clock">00:00:00</span> <span id="dateDisplay">Jan 01</span>
-            </div>
-            <div style="margin-left:auto; display:flex; gap:4px;">
+            <div class="logo"><div class="icon">📡</div><h1>StreamStation Pro</h1></div>
+            <div class="search-wrap"><span class="search-icon">🔍</span><input type="text" id="searchInput" placeholder="Search..." /></div>
+            <div class="now-playing"><span class="live-dot"></span> <strong id="currentChannelLabel">-</strong></div>
+            <div class="header-right">
                 <button class="btn" id="shuffleBtn">🎲</button>
                 <button class="btn" id="exportBtn">💾</button>
                 <button class="btn" id="importBtn">📂</button>
                 <button class="btn" id="compactToggle">📐</button>
                 <button class="btn" id="themeToggle">🌓</button>
-                <button class="btn" id="logoutBtn" style="display:none;">🚪 Admin</button>
+                <button class="btn" id="logoutBtn" style="display:none;">🚪</button>
                 <button class="btn" id="viewerLogoutBtn" style="display:none;">🔒 Sign out</button>
             </div>
-            <div class="support-notice"><span>📢 24/7 Support: Join our Discord for help and updates. Enjoy unlimited streaming!</span></div>
         </div>
 
-        <!-- PLAYER -->
-        <div class="player-wrapper" id="playerWrapper">
-            <div id="playerContainer"><div style="text-align:center;padding:30px;color:#475569;">Select a stream from the list below</div></div>
-            <div class="channel-info-overlay" id="channelInfoOverlay">Now Playing: <span id="nowPlayingTitle">-</span></div>
+        <div class="player-wrapper">
+            <div id="playerContainer"><div class="fallback-text" id="fallbackText">Select a channel</div></div>
             <div class="player-controls">
-                <button class="ctrl-btn" id="playPauseBtn">▶️</button>
-                <button class="ctrl-btn" id="muteBtn">🔊</button>
-                <input type="range" class="volume-slider" id="volumeSlider" min="0" max="100" value="80" />
-                <div class="progress-bar" id="progressBar"><div class="progress-filled" id="progressFilled"></div></div>
-                <select class="ctrl-btn" id="speedSelect" style="background:transparent; color:#fff; border:none; font-size:11px;">
-                    <option value="1">1x</option><option value="0.5">0.5x</option><option value="1.5">1.5x</option><option value="2">2x</option>
-                </select>
-                <button class="ctrl-btn" id="pipBtn">📌</button>
-                <button class="ctrl-btn" id="fullscreenBtn">🖥️</button>
-                <button class="ctrl-btn" id="refreshBtn">🔄</button>
-            </div>
-            <button class="nav-arrow nav-prev" id="prevBtn">‹</button>
-            <button class="nav-arrow nav-next" id="nextBtn">›</button>
-            <div class="loading-overlay" id="loadingOverlay">⏳ Loading...</div>
-            <div class="error-overlay" id="errorOverlay">
-                <div>⚠️ Playback Error</div>
-                <button id="retryBtn">Retry</button>
+                <button class="refresh-btn active" id="refreshBtn">🔄 Reload</button>
+                <button class="pip-btn" id="pipButton">📌 PiP</button>
+                <button class="fullscreen-btn" id="fullscreenBtn">🖥️ Full</button>
             </div>
         </div>
 
-        <!-- CONTENT PANEL OVERLAY -->
-        <div class="sidebar-overlay" id="sidebarOverlay">
-            <div class="channel-panel" id="channelPanel">
-                <div class="panel-handle" id="panelHandle"></div>
+        <div class="tabs" id="tabsContainer">
+            <button class="tab active" data-cat="all">🌐 All <span class="count" id="countAll">0</span></button>
+            <button class="tab" data-cat="youtube">▶️ YT <span class="count" id="countYt">0</span></button>
+            <button class="tab" data-cat="facebook">📱 FB <span class="count" id="countFb">0</span></button>
+            <button class="tab" data-cat="web">🌊 Web <span class="count" id="countWeb">0</span></button>
+            <button class="tab" data-cat="tv">📺 TV <span class="count" id="countTv">0</span></button>
+        </div>
 
-                <!-- Source Switcher -->
-                <div class="source-tabs">
-                    <button class="source-tab active" data-source="all">🌐 All</button>
-                    <button class="source-tab" data-source="youtube">▶️ YouTube</button>
-                    <button class="source-tab" data-source="facebook">📱 Facebook</button>
-                    <button class="source-tab" data-source="web">🌊 Web</button>
-                    <button class="source-tab" data-source="tv">📺 TV</button>
-                </div>
+        <div class="channel-grid" id="channelGrid"></div>
 
-                <!-- Category Filters (placeholder for future genres) -->
-                <div class="category-filters" id="categoryFilters">
-                    <button class="cat-filter active" data-cat="all">All</button>
-                    <button class="cat-filter" data-cat="sports">🏏 Sports</button>
-                    <button class="cat-filter" data-cat="news">📰 News</button>
-                    <button class="cat-filter" data-cat="entertainment">🎭 Entertainment</button>
-                    <button class="cat-filter" data-cat="music">🎵 Music</button>
-                </div>
-
-                <input type="text" class="search-box" id="searchInput" placeholder="Search streams by name or URL..." />
-
-                <div class="content-grid" id="channelGrid"></div>
-
-                <!-- Admin Add Section -->
-                <div class="add-section hidden" id="addSection">
-                    <input type="text" id="channelNameInput" placeholder="Stream Title" />
-                    <input type="text" id="channelUrlInput" placeholder="Paste URL (YouTube, FB, m3u8, website)" />
-                    <select id="channelCategorySelect">
-                        <option value="auto">Auto Detect</option>
-                        <option value="youtube">YouTube</option>
-                        <option value="facebook">Facebook</option>
-                        <option value="web">Web</option>
-                        <option value="tv">TV</option>
-                    </select>
-                    <button class="btn-primary" id="addChannelBtn">➕ Add</button>
-                </div>
-            </div>
+        <div class="add-section" id="addSection">
+            <input type="text" id="channelNameInput" placeholder="Title" />
+            <input type="text" id="channelUrlInput" placeholder="Paste URL" />
+            <select id="channelCategorySelect">
+                <option value="auto">🤖 Auto</option>
+                <option value="youtube">▶️ YT</option>
+                <option value="facebook">📱 FB</option>
+                <option value="web">🌊 Web</option>
+                <option value="tv">📺 TV</option>
+            </select>
+            <button class="btn primary" id="addChannelBtn">➕ Add</button>
         </div>
     </div>
 
-    <!-- EDIT MODAL -->
     <div class="modal" id="editModal">
         <div class="modal-content">
-            <h3>✏️ Edit Stream</h3>
+            <h3>✏️ Edit Channel</h3>
             <input type="text" id="editName" placeholder="Name" />
             <input type="text" id="editUrl" placeholder="URL" />
             <select id="editCategory">
@@ -295,7 +158,7 @@
             </select>
             <div class="modal-actions">
                 <button class="btn" id="cancelEdit">Cancel</button>
-                <button class="btn-primary" id="saveEdit">Save</button>
+                <button class="btn primary" id="saveEdit">Save</button>
             </div>
         </div>
     </div>
@@ -305,7 +168,7 @@
 
     <script>
         (() => {
-            // Firebase & API config
+            // Firebase web config (databaseURL removed – only needed by the backend function)
             const firebaseConfig = {
                 apiKey: "AIzaSyAxf2AANYSTxAHzOzLa4RT8Eyi68Z8b0tA",
                 authDomain: "streamstation-4b55e.firebaseapp.com",
@@ -316,138 +179,150 @@
             };
             firebase.initializeApp(firebaseConfig);
             const auth = firebase.auth();
-            const API_BASE = 'https://streamstation.netlify.app/.netlify/functions/api';
 
-            // State
+            // ✅ UPDATED TO YOUR CUSTOM DOMAIN
+            const API_BASE = 'https://streamstation.darkranks.com/.netlify/functions/api';
+
             let channels = [], activeIndex = -1, activeCategory = 'all', searchQuery = '';
             let hlsInstance = null, currentPlayerElement = null;
-            let adminToken = null, isAdmin = false, editChannelId = null, currentFirebaseUser = null;
-            let favorites = JSON.parse(localStorage.getItem('stream_favorites') || '[]');
-            let volume = parseFloat(localStorage.getItem('stream_volume') || '0.8');
-            let muted = localStorage.getItem('stream_muted') === 'true';
+            let adminToken = null, isAdmin = false;
+            let editChannelId = null;
+            let currentFirebaseUser = null;
 
-            // DOM refs
             const grid = document.getElementById('channelGrid'), container = document.getElementById('playerContainer'),
-                toastEl = document.getElementById('toast'), addSection = document.getElementById('addSection'),
-                sidebarOverlay = document.getElementById('sidebarOverlay'), editModal = document.getElementById('editModal'),
-                searchInput = document.getElementById('searchInput'), volumeSlider = document.getElementById('volumeSlider'),
-                progressBar = document.getElementById('progressBar'), progressFilled = document.getElementById('progressFilled'),
-                nowPlayingTitle = document.getElementById('nowPlayingTitle'),
-                loadingOverlay = document.getElementById('loadingOverlay'), errorOverlay = document.getElementById('errorOverlay'),
-                playerWrapper = document.getElementById('playerWrapper');
+                fallbackText = document.getElementById('fallbackText'), currentLabel = document.getElementById('currentChannelLabel'),
+                toastEl = document.getElementById('toast'), pipBtn = document.getElementById('pipButton'),
+                fullscreenBtn = document.getElementById('fullscreenBtn'), refreshBtn = document.getElementById('refreshBtn'),
+                searchInput = document.getElementById('searchInput'), editModal = document.getElementById('editModal'),
+                addSection = document.getElementById('addSection'), logoutBtn = document.getElementById('logoutBtn'),
+                authOverlay = document.getElementById('authOverlay'), authBox = document.getElementById('authBox'),
+                adminBox = document.getElementById('adminBox'), authTitle = document.getElementById('authTitle'),
+                authEmail = document.getElementById('authEmail'), authPassword = document.getElementById('authPassword'),
+                authActionBtn = document.getElementById('authActionBtn'), authSwitch = document.getElementById('authSwitch'),
+                adminSwitch = document.getElementById('adminSwitch'), adminPassword = document.getElementById('adminPassword'),
+                adminLoginBtn = document.getElementById('adminLoginBtn'), backToViewer = document.getElementById('backToViewer'),
+                viewerLogoutBtn = document.getElementById('viewerLogoutBtn'),
+                googleSignInBtn = document.getElementById('googleSignInBtn');
 
-            // Toast
             let toastTimer;
             function showToast(msg, error=false) {
-                clearTimeout(toastTimer);
-                toastEl.textContent = msg; toastEl.style.color = error ? '#fca5a5' : '#e0e4ff';
+                clearTimeout(toastTimer); toastEl.textContent = msg; toastEl.style.color = error ? '#fca5a5' : '#e2e8f0';
                 toastEl.classList.add('show'); toastTimer = setTimeout(() => toastEl.classList.remove('show'), 2000);
             }
 
-            // Clock & Date
-            function updateClock() {
-                const now = new Date();
-                document.getElementById('clock').textContent = now.toLocaleTimeString('en-US', { hour12: false });
-                document.getElementById('dateDisplay').textContent = now.toLocaleDateString('en-US', { weekday:'short', month:'short', day:'numeric' });
-            }
-            setInterval(updateClock, 1000); updateClock();
-
-            // Favorites helpers
-            function toggleFavorite(id) {
-                if (favorites.includes(id)) favorites = favorites.filter(f => f !== id);
-                else favorites.push(id);
-                localStorage.setItem('stream_favorites', JSON.stringify(favorites));
-                renderGrid();
-            }
-            function isFavorite(id) { return favorites.includes(id); }
-
-            // Auth UI
+            // ── Firebase Auth UI ──────────────────────────────
             let isRegisterMode = false;
-            document.getElementById('authSwitch').addEventListener('click', () => {
-                isRegisterMode = !isRegisterMode;
-                document.getElementById('authActionBtn').textContent = isRegisterMode ? 'Register' : 'Login';
-                document.getElementById('authSwitch').textContent = isRegisterMode ? 'Login instead' : 'Register';
-            });
-            document.getElementById('adminSwitch').addEventListener('click', () => {
-                document.getElementById('authBox').style.display = 'none';
-                document.getElementById('adminBox').style.display = 'block';
-            });
-            document.getElementById('backToViewer').addEventListener('click', () => {
-                document.getElementById('adminBox').style.display = 'none';
-                document.getElementById('authBox').style.display = 'block';
-            });
+            function updateAuthUI() {
+                authTitle.textContent = isRegisterMode ? '📝 Register' : '🔐 Viewer Login';
+                authActionBtn.textContent = isRegisterMode ? 'Register' : 'Login';
+                authSwitch.textContent = isRegisterMode ? 'Already have an account? Login' : 'Don\'t have an account? Register';
+            }
+            authSwitch.addEventListener('click', () => { isRegisterMode = !isRegisterMode; updateAuthUI(); });
+            adminSwitch.addEventListener('click', () => { authBox.style.display = 'none'; adminBox.style.display = 'block'; });
+            backToViewer.addEventListener('click', () => { adminBox.style.display = 'none'; authBox.style.display = 'block'; });
 
-            document.getElementById('authActionBtn').addEventListener('click', async () => {
-                const email = document.getElementById('authEmail').value.trim();
-                const pass = document.getElementById('authPassword').value;
+            // Email/Password login/register
+            authActionBtn.addEventListener('click', async () => {
+                const email = authEmail.value.trim(), pass = authPassword.value;
                 if (!email || !pass) return showToast('Email and password required', true);
                 try {
                     if (isRegisterMode) await auth.createUserWithEmailAndPassword(email, pass);
                     else await auth.signInWithEmailAndPassword(email, pass);
-                } catch(e) { showToast(e.message, true); }
+                } catch (e) { showToast(e.message, true); }
             });
 
-            document.getElementById('googleSignInBtn').addEventListener('click', async () => {
+            // Google Sign-In
+            googleSignInBtn.addEventListener('click', async () => {
                 const provider = new firebase.auth.GoogleAuthProvider();
-                try { await auth.signInWithPopup(provider); } catch(e) { showToast(e.message, true); }
+                try {
+                    await auth.signInWithPopup(provider);
+                } catch (e) { showToast(e.message, true); }
             });
 
-            document.getElementById('adminLoginBtn').addEventListener('click', async () => {
-                const pass = document.getElementById('adminPassword').value;
+            // Admin login (separate JWT)
+            adminLoginBtn.addEventListener('click', async () => {
+                const pass = adminPassword.value;
                 try {
                     const res = await fetch(`${API_BASE}/admin-login`, {
-                        method:'POST', headers:{'Content-Type':'application/json'},
+                        method: 'POST', headers: {'Content-Type': 'application/json'},
                         body: JSON.stringify({ password: pass })
                     });
                     if (!res.ok) throw new Error('Wrong password');
                     const data = await res.json();
-                    adminToken = data.token; isAdmin = true;
-                    document.getElementById('adminBox').style.display = 'none';
-                    document.getElementById('authOverlay').style.display = 'none';
-                    updateAdminUI(); showToast('🔓 Admin access');
+                    adminToken = data.token;
+                    isAdmin = true;
+                    adminBox.style.display = 'none';
+                    authOverlay.style.display = 'none';
+                    updateAdminUI();
+                    showToast('🔓 Admin access granted');
                     loadChannels();
-                } catch(e) { showToast(e.message, true); }
+                } catch (e) { showToast(e.message, true); }
             });
 
-            document.getElementById('viewerLogoutBtn').addEventListener('click', () => {
-                auth.signOut(); currentFirebaseUser = null; channels = []; activeIndex = -1;
-                renderGrid(); destroyPlayer();
-                document.getElementById('authOverlay').style.display = 'flex';
-                document.getElementById('viewerLogoutBtn').style.display = 'none';
-                isAdmin = false; adminToken = null; updateAdminUI();
+            // Sign out viewer
+            viewerLogoutBtn.addEventListener('click', () => {
+                auth.signOut();
+                currentFirebaseUser = null;
+                channels = [];
+                activeIndex = -1;
+                renderGrid();
+                destroyPlayer();
+                fallbackText.style.display = '';
+                currentLabel.textContent = '-';
+                authOverlay.style.display = 'flex';
+                authBox.style.display = 'block';
+                adminBox.style.display = 'none';
+                viewerLogoutBtn.style.display = 'none';
+                isAdmin = false;
+                adminToken = null;
+                updateAdminUI();
             });
 
+            // Auth state observer
             auth.onAuthStateChanged(async (user) => {
                 if (user) {
                     currentFirebaseUser = user;
-                    document.getElementById('authOverlay').style.display = 'none';
-                    document.getElementById('viewerLogoutBtn').style.display = 'flex';
-                    if (!isAdmin) await loadChannels();
+                    authOverlay.style.display = 'none';
+                    viewerLogoutBtn.style.display = 'flex';
+                    if (!isAdmin) {
+                        await loadChannels();
+                    }
                 } else {
                     currentFirebaseUser = null;
-                    document.getElementById('viewerLogoutBtn').style.display = 'none';
-                    if (!isAdmin) document.getElementById('authOverlay').style.display = 'flex';
+                    viewerLogoutBtn.style.display = 'none';
+                    if (!isAdmin) {
+                        authOverlay.style.display = 'flex';
+                        channels = [];
+                        renderGrid();
+                    }
                 }
             });
 
             function updateAdminUI() {
                 addSection.classList.toggle('hidden', !isAdmin);
-                document.getElementById('logoutBtn').style.display = isAdmin ? 'flex' : 'none';
-                document.querySelectorAll('.card-actions .edit-btn, .card-actions .del-btn').forEach(b => b.style.display = isAdmin ? '' : 'none');
+                logoutBtn.style.display = isAdmin ? 'flex' : 'none';
+                document.querySelectorAll('.actions .edit-btn, .actions .del-btn').forEach(b => b.style.display = isAdmin ? '' : 'none');
             }
-            document.getElementById('logoutBtn').addEventListener('click', () => {
-                isAdmin = false; adminToken = null; updateAdminUI(); showToast('👋 Admin logged out');
+            logoutBtn.addEventListener('click', () => {
+                isAdmin = false;
+                adminToken = null;
+                updateAdminUI();
+                showToast('👋 Admin logged out');
             });
 
-            // API helpers
+            // ── API helpers ──────────────────────────────────
             async function apiFetch(path, method='GET', body=null, useAdminToken=false) {
                 const headers = { 'Content-Type': 'application/json' };
-                if (useAdminToken && adminToken) headers['Authorization'] = `Bearer ${adminToken}`;
-                else if (currentFirebaseUser) {
+                if (useAdminToken && adminToken) {
+                    headers['Authorization'] = `Bearer ${adminToken}`;
+                } else if (currentFirebaseUser) {
                     const idToken = await currentFirebaseUser.getIdToken();
                     headers['Authorization'] = `Bearer ${idToken}`;
                 }
-                const res = await fetch(`${API_BASE}/${path}`, { method, headers, body: body ? JSON.stringify(body) : undefined });
+                const res = await fetch(`${API_BASE}/${path}`, {
+                    method, headers,
+                    body: body ? JSON.stringify(body) : undefined
+                });
                 if (!res.ok) {
                     const err = await res.json().catch(() => ({ error: 'Network error' }));
                     throw new Error(err.error || 'Request failed');
@@ -462,139 +337,76 @@
                     if (activeIndex >= channels.length) activeIndex = channels.length > 0 ? 0 : -1;
                     renderGrid();
                     if (activeIndex >= 0) playChannel(activeIndex);
-                    document.getElementById('liveCount').textContent = channels.length;
-                } catch(e) { showToast('Failed to load channels: ' + e.message, true); }
+                } catch (e) { showToast('Failed to load channels: ' + e.message, true); }
             }
 
             async function addChannelToServer(data) { return await apiFetch('channels', 'POST', data, true); }
             async function deleteChannelFromServer(id) { await apiFetch(`channels/${id}`, 'DELETE', null, true); }
             async function updateChannelOnServer(id, data) { await apiFetch(`channels/${id}`, 'PUT', data, true); }
 
-            // Player
+            // ── Player ─────────────────────────────────────
             function destroyPlayer() {
                 if (hlsInstance) { hlsInstance.destroy(); hlsInstance = null; }
                 if (currentPlayerElement) { currentPlayerElement.remove(); currentPlayerElement = null; }
-                loadingOverlay.style.display = 'none'; errorOverlay.style.display = 'none';
+                pipBtn.classList.remove('active'); fullscreenBtn.classList.remove('active'); refreshBtn.classList.remove('active');
             }
-
             function playChannel(index) {
-                destroyPlayer();
-                if (index < 0 || index >= channels.length) return;
-                const ch = channels[index]; activeIndex = index;
-                nowPlayingTitle.textContent = ch.name;
+                destroyPlayer(); fallbackText.style.display = 'none';
+                if (index < 0 || index >= channels.length) { fallbackText.style.display = ''; currentLabel.textContent = '-'; return; }
+                const ch = channels[index]; activeIndex = index; currentLabel.textContent = ch.name; refreshBtn.classList.add('active');
                 const url = ch.url.trim(), cat = ch.category;
-                let iframe = document.createElement('iframe');
                 if (cat === 'youtube') {
-                    const match = url.match(/(?:v=|\/)([a-zA-Z0-9_-]{11})/);
-                    iframe.src = `https://www.youtube-nocookie.com/embed/${match?.[1]}?autoplay=1&mute=${muted?1:0}&controls=1&playsinline=1&rel=0`;
+                    const embed = (url.includes('youtube.com/embed') || url.includes('youtube-nocookie.com/embed')) ? url : `https://www.youtube-nocookie.com/embed/${url.match(/(?:v=|\/)([a-zA-Z0-9_-]{11})/)?.[1] || ''}?autoplay=1&mute=1&controls=1&playsinline=1&rel=0`;
+                    const iframe = document.createElement('iframe'); iframe.src = embed; iframe.allow = 'autoplay; clipboard-write; encrypted-media; picture-in-picture; web-share; fullscreen'; iframe.allowFullscreen = true; iframe.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;border:0;'; container.appendChild(iframe); currentPlayerElement = iframe;
                 } else if (cat === 'facebook') {
-                    iframe.src = `https://www.facebook.com/plugins/video.php?href=${encodeURIComponent(url)}&show_text=0&autoplay=1&mute=${muted?1:0}`;
+                    const embed = url.includes('facebook.com/plugins/video.php') ? url : `https://www.facebook.com/plugins/video.php?href=${encodeURIComponent(url)}&show_text=0&autoplay=1&mute=1`;
+                    const iframe = document.createElement('iframe'); iframe.src = embed; iframe.allow = 'autoplay; clipboard-write; encrypted-media; picture-in-picture; web-share; fullscreen'; iframe.allowFullscreen = true; iframe.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;border:0;'; container.appendChild(iframe); currentPlayerElement = iframe;
                 } else {
-                    iframe.src = url;
+                    const iframe = document.createElement('iframe'); iframe.src = url; iframe.sandbox = 'allow-scripts allow-same-origin allow-popups allow-forms'; iframe.allow = 'fullscreen'; iframe.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;border:0;'; container.appendChild(iframe); currentPlayerElement = iframe;
                 }
-                iframe.allow = 'autoplay; fullscreen; picture-in-picture';
-                iframe.allowFullscreen = true;
-                iframe.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;border:0;';
-                container.innerHTML = ''; container.appendChild(iframe);
-                currentPlayerElement = iframe;
             }
+            function reloadStream() { if (activeIndex >= 0) playChannel(activeIndex); }
 
-            // Navigation
-            document.getElementById('prevBtn').addEventListener('click', () => {
-                if (channels.length) { activeIndex = (activeIndex - 1 + channels.length) % channels.length; playChannel(activeIndex); }
-            });
-            document.getElementById('nextBtn').addEventListener('click', () => {
-                if (channels.length) { activeIndex = (activeIndex + 1) % channels.length; playChannel(activeIndex); }
-            });
-
-            // Sidebar toggle
-            document.getElementById('togglePanelBtn').addEventListener('click', () => sidebarOverlay.classList.toggle('open'));
-            let startY = 0;
-            document.getElementById('panelHandle').addEventListener('touchstart', (e) => { startY = e.touches[0].clientY; });
-            document.getElementById('panelHandle').addEventListener('touchmove', (e) => {
-                if (e.touches[0].clientY - startY > 60) sidebarOverlay.classList.remove('open');
-            });
-
-            // Volume
-            volumeSlider.value = volume * 100;
-            volumeSlider.addEventListener('input', () => {
-                volume = volumeSlider.value / 100;
-                localStorage.setItem('stream_volume', volume);
-                if (currentPlayerElement && currentPlayerElement.tagName === 'VIDEO') currentPlayerElement.volume = volume;
-            });
-            document.getElementById('muteBtn').addEventListener('click', () => {
-                muted = !muted; localStorage.setItem('stream_muted', muted);
-                document.getElementById('muteBtn').textContent = muted ? '🔇' : '🔊';
-                if (currentPlayerElement && currentPlayerElement.tagName === 'VIDEO') currentPlayerElement.muted = muted;
-            });
-
-            // Render grid
+            // ── Render ─────────────────────────────────────
             function getFilteredSorted() {
                 let list = [...channels];
                 if (activeCategory !== 'all') list = list.filter(c => c.category === activeCategory);
-                if (searchQuery) {
-                    const q = searchQuery.toLowerCase();
-                    list = list.filter(c => c.name.toLowerCase().includes(q) || c.url.toLowerCase().includes(q));
-                }
+                if (searchQuery) { const q = searchQuery.toLowerCase(); list = list.filter(c => c.name.toLowerCase().includes(q) || c.url.toLowerCase().includes(q)); }
                 return list;
             }
             function renderGrid() {
                 const filtered = getFilteredSorted(); grid.innerHTML = '';
-                if (!filtered.length) { grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:15px;color:#64748b;">📭 No streams found</div>'; return; }
+                if (!filtered.length) { grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:15px;color:#64748b;">📭 No channels</div>'; return; }
                 filtered.forEach(ch => {
                     const idx = channels.indexOf(ch); const card = document.createElement('div');
                     card.className = 'channel-card'; if (idx === activeIndex) card.classList.add('active');
-                    const thumb = ch.thumbnail;
-                    const thumbHTML = thumb ? `<img src="${thumb}" alt="" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';"><div class="placeholder" style="display:none;">${ch.emoji || '📡'}</div>` : `<div class="placeholder">${ch.emoji || '📡'}</div>`;
-                    card.innerHTML = `
-                        <div class="card-thumb">
-                            ${thumbHTML}
-                            <button class="fav-btn ${isFavorite(ch.id) ? 'favorited' : ''}" data-favid="${ch.id}">${isFavorite(ch.id) ? '❤️' : '🤍'}</button>
-                        </div>
-                        <div class="card-info">
-                            <div class="card-name" title="${ch.name}">${ch.name}</div>
-                            <div class="card-meta">
-                                <span class="card-badge" style="background:${ch.category==='youtube'?'#fee2e2':ch.category==='facebook'?'#dbeafe':ch.category==='web'?'#d1fae5':'#ede9fe'};color:${ch.category==='youtube'?'#dc2626':'#2563eb'}">${ch.category}</span>
-                            </div>
-                        </div>
-                        <div class="card-actions">
-                            <button class="action-btn edit-btn" data-id="${ch.id}">✎</button>
-                            <button class="action-btn del-btn" data-id="${ch.id}">✕</button>
-                        </div>
-                    `;
-                    card.addEventListener('click', (e) => {
-                        if (e.target.closest('.fav-btn, .card-actions')) return;
-                        activeIndex = idx; renderGrid(); playChannel(activeIndex); sidebarOverlay.classList.remove('open');
-                    });
-                    card.querySelector('.fav-btn').addEventListener('click', (e) => {
-                        e.stopPropagation(); toggleFavorite(ch.id);
-                    });
-                    card.querySelector('.del-btn').addEventListener('click', async (e) => {
-                        e.stopPropagation(); if (!isAdmin) return;
-                        await deleteChannelFromServer(ch.id); await loadChannels();
-                    });
-                    card.querySelector('.edit-btn').addEventListener('click', (e) => {
-                        e.stopPropagation(); openEditModal(ch);
-                    });
+                    const thumb = ch.thumbnail; const thumbHTML = thumb ? `<img src="${thumb}" alt="" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';" /><div class="placeholder" style="display:none;">${ch.emoji || '📡'}</div>` : `<div class="placeholder">${ch.emoji || '📡'}</div>`;
+                    card.innerHTML = `<div class="card-thumb">${thumbHTML}</div><div class="card-info"><div class="card-name">${ch.name}</div><span class="card-badge">${ch.category}</span></div><div class="actions"><button class="action-btn edit-btn" data-id="${ch.id}">✎</button><button class="action-btn del-btn" data-id="${ch.id}">✕</button></div>`;
+                    card.addEventListener('click', () => { activeIndex = idx; renderGrid(); playChannel(activeIndex); });
+                    card.querySelector('.del-btn').addEventListener('click', async (e) => { e.stopPropagation(); if (!isAdmin) return; await deleteChannelFromServer(ch.id); await loadChannels(); });
+                    card.querySelector('.edit-btn').addEventListener('click', (e) => { e.stopPropagation(); openEditModal(ch); });
                     grid.appendChild(card);
                 });
-                document.getElementById('liveCount').textContent = channels.length;
+                updateCounts();
+            }
+            function updateCounts() {
+                const counts = { all: channels.length, youtube: 0, facebook: 0, web: 0, tv: 0 };
+                channels.forEach(c => { if (counts[c.category] !== undefined) counts[c.category]++; });
+                ['All','Yt','Fb','Web','Tv'].forEach((k,i) => { const el = document.getElementById('count'+['All','Yt','Fb','Web','Tv'][i]); if (el) el.textContent = counts[['all','youtube','facebook','web','tv'][i]]; });
             }
             function openEditModal(ch) {
-                editChannelId = ch.id; document.getElementById('editName').value = ch.name;
-                document.getElementById('editUrl').value = ch.url; document.getElementById('editCategory').value = ch.category;
-                editModal.classList.add('open');
+                editChannelId = ch.id; document.getElementById('editName').value = ch.name; document.getElementById('editUrl').value = ch.url;
+                document.getElementById('editCategory').value = ch.category; editModal.classList.add('open');
             }
             async function saveEdit() {
-                const name = document.getElementById('editName').value.trim();
-                const url = document.getElementById('editUrl').value.trim();
+                const name = document.getElementById('editName').value.trim(); const url = document.getElementById('editUrl').value.trim();
                 const category = document.getElementById('editCategory').value;
                 if (!name || !url) return showToast('Name and URL required', true);
                 await updateChannelOnServer(editChannelId, { name, url, category });
                 editModal.classList.remove('open'); await loadChannels();
             }
 
-            // Add channel
+            // ── Add channel ──────────────────────────────────
             document.getElementById('addChannelBtn').addEventListener('click', async () => {
                 if (!isAdmin) return showToast('Admin only', true);
                 const name = document.getElementById('channelNameInput').value.trim();
@@ -606,49 +418,28 @@
                     await addChannelToServer({ name, url, category: cat, emoji: '📡' });
                     document.getElementById('channelNameInput').value = ''; document.getElementById('channelUrlInput').value = '';
                     await loadChannels();
-                } catch(e) { showToast(e.message, true); }
+                } catch (e) { showToast(e.message, true); }
             });
 
-            // Search & Tabs
-            searchInput.addEventListener('input', () => { searchQuery = searchInput.value; renderGrid(); });
-            document.querySelectorAll('.source-tab').forEach(tab => {
-                tab.addEventListener('click', () => {
-                    document.querySelectorAll('.source-tab').forEach(t => t.classList.remove('active'));
-                    tab.classList.add('active'); activeCategory = tab.dataset.source; renderGrid();
-                });
-            });
-
-            // Shuffle, Export, Import, Theme
-            document.getElementById('shuffleBtn').addEventListener('click', () => {
-                if (!channels.length) return; activeIndex = Math.floor(Math.random() * channels.length); renderGrid(); playChannel(activeIndex);
-            });
-            document.getElementById('exportBtn').addEventListener('click', () => {
-                const data = JSON.stringify(channels.map(c => ({ name:c.name, url:c.url, category:c.category })), null, 2);
-                const blob = new Blob([data], { type: 'application/json' }); const a = document.createElement('a');
-                a.href = URL.createObjectURL(blob); a.download = 'darkranks_channels.json'; a.click();
-            });
-            document.getElementById('importBtn').addEventListener('click', () => {
-                if (!isAdmin) return showToast('Admin only', true); document.getElementById('importFileInput').click();
-            });
-            document.getElementById('importFileInput').addEventListener('change', async (e) => {
-                const file = e.target.files[0]; if (!file) return;
-                const text = await file.text(); try {
-                    const arr = JSON.parse(text); for (const item of arr) await addChannelToServer({ name: item.name, url: item.url, category: item.category || 'web' });
-                    await loadChannels(); showToast('📂 Imported');
-                } catch { showToast('Invalid file', true); }
-                e.target.value = '';
-            });
+            // ── Other UI ────────────────────────────────────
+            let debounce;
+            searchInput.addEventListener('input', () => { clearTimeout(debounce); debounce = setTimeout(() => { searchQuery = searchInput.value; renderGrid(); }, 150); });
+            document.getElementById('shuffleBtn').addEventListener('click', () => { if (!channels.length) return; activeIndex = Math.floor(Math.random() * channels.length); renderGrid(); playChannel(activeIndex); });
+            refreshBtn.addEventListener('click', reloadStream);
+            document.getElementById('exportBtn').addEventListener('click', () => { const data = JSON.stringify(channels.map(c => ({ name: c.name, url: c.url, category: c.category })), null, 2); const blob = new Blob([data], { type: 'application/json' }); const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'channels.json'; a.click(); });
+            document.getElementById('importBtn').addEventListener('click', () => { if (!isAdmin) return showToast('Admin only', true); document.getElementById('importFileInput').click(); });
+            document.getElementById('importFileInput').addEventListener('change', async (e) => { const file = e.target.files[0]; if (!file) return; const text = await file.text(); try { const arr = JSON.parse(text); for (const item of arr) { await addChannelToServer({ name: item.name, url: item.url, category: item.category || 'web' }); } await loadChannels(); showToast('📂 Imported'); } catch { showToast('Invalid file', true); } e.target.value = ''; });
             document.getElementById('compactToggle').addEventListener('click', () => { document.body.classList.toggle('compact'); localStorage.setItem('compact', document.body.classList.contains('compact')); });
             if (localStorage.getItem('compact') === 'true') document.body.classList.add('compact');
             document.getElementById('themeToggle').addEventListener('click', () => { document.body.classList.toggle('light'); localStorage.setItem('theme', document.body.classList.contains('light') ? 'light' : 'dark'); });
             if (localStorage.getItem('theme') === 'light') document.body.classList.add('light');
-
-            // Modals
             document.getElementById('cancelEdit').addEventListener('click', () => editModal.classList.remove('open'));
             document.getElementById('saveEdit').addEventListener('click', saveEdit);
+            document.querySelectorAll('.tab').forEach(tab => tab.addEventListener('click', () => { document.querySelectorAll('.tab').forEach(t => t.classList.remove('active')); tab.classList.add('active'); activeCategory = tab.dataset.cat; renderGrid(); }));
 
-            // Initial auth overlay
-            document.getElementById('authOverlay').style.display = 'flex';
+            // Initial state
+            authOverlay.style.display = 'flex';
+            updateAuthUI();
         })();
     </script>
 </body>
