@@ -13,13 +13,7 @@ const db = admin.database();
 const JWT_SECRET = process.env.JWT_SECRET;
 const ADMIN_PASSWORD_HASH = process.env.ADMIN_PASSWORD_HASH;
 
-async function verifyFirebaseToken(event) {
-  const authHeader = event.headers.authorization;
-  if (!authHeader || !authHeader.startsWith('Bearer ')) throw new Error('Missing Firebase token');
-  const token = authHeader.split('Bearer ')[1];
-  await admin.auth().verifyIdToken(token);
-}
-
+// Helper: verify admin JWT
 function verifyAdminToken(event) {
   const authHeader = event.headers.authorization;
   if (!authHeader || !authHeader.startsWith('Bearer ')) throw new Error('Missing admin token');
@@ -43,7 +37,7 @@ exports.handler = async (event) => {
   try { body = JSON.parse(event.body || '{}'); } catch (e) {}
 
   try {
-    // ── ADMIN LOGIN (uses password hash) ──
+    // ── ADMIN LOGIN ──
     if (path[0] === 'admin-login' && method === 'POST') {
       const match = await bcrypt.compare(body.password, ADMIN_PASSWORD_HASH);
       if (!match) return { statusCode: 403, headers, body: JSON.stringify({ error: 'Wrong password' }) };
@@ -51,9 +45,8 @@ exports.handler = async (event) => {
       return { statusCode: 200, headers, body: JSON.stringify({ token }) };
     }
 
-    // ── GET CHANNELS (requires Firebase ID token) ──
+    // ── GET CHANNELS (temporarily PUBLIC – remove token check) ──
     if (path[0] === 'channels' && method === 'GET') {
-      await verifyFirebaseToken(event);
       const snap = await db.ref('channels').once('value');
       const channels = [];
       snap.forEach(child => {
